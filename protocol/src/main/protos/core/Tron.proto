@@ -11,9 +11,9 @@ option java_outer_classname = "Protocol"; //Specify the class name of the genera
 option go_package = "github.com/tronprotocol/grpc-gateway/core";
 
 enum AccountType {
-  Normal = 0;
-  AssetIssue = 1;
-  Contract = 2;
+  Normal = 0;     //business
+  AssetIssue = 1; //personal
+  Contract = 2;   //contract
 }
 
 // AccountId, (name, address) use name, (null, address) use address, (name, null) use name,
@@ -64,6 +64,19 @@ message ChainParameters {
     string key = 1;
     int64 value = 2;
   }
+}
+
+message PersonalInfo {
+  //hash(identity_info)
+  string identity = 1;
+  //appID
+  string appID = 2;
+}
+
+message AppAcount {
+  PersonalInfo personal_info = 1;
+  bytes address = 2;
+  int64 create_time = 3;
 }
 
 /* Account */
@@ -272,6 +285,7 @@ message Transaction {
       ClearABIContract = 48;
       UpdateBrokerageContract = 49;
       ShieldedTransferContract = 51;
+      BusinessCreateContract = 52;
     }
     ContractType type = 1;
     google.protobuf.Any parameter = 2;
