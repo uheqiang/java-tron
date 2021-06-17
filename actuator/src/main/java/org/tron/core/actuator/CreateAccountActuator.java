@@ -24,6 +24,8 @@ public class CreateAccountActuator extends AbstractActuator {
 
   //AccountType.AssetIssue = 1
   private static final int ASSET_ISSUE = 1;
+  //AccountType.Normal = 0
+  private static final int NORMAL = 0;
 
   public CreateAccountActuator() {
     super(ContractType.AccountCreateContract, AccountCreateContract.class);
@@ -47,11 +49,15 @@ public class CreateAccountActuator extends AbstractActuator {
               timestamp, withDefaultPermission, dynamicStore);
       accountStore.put(accountCreateContract.getAccountAddress().toByteArray(), accountCapsule);
 
-      AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();
-      PersonalInfo personalInfo = accountCreateContract.getPersonalInfo();
-      AppAccountIndexCapsule appAccountIndexCapsule =  new AppAccountIndexCapsule(
-              personalInfo,  accountCreateContract.getAccountAddress(), timestamp);
-      appAccountIndexStore.put(personalInfo.getIdentity().concat(personalInfo.getAppID()).getBytes(), appAccountIndexCapsule);
+      //只有商家中的用户注册才与商家关联起来
+      if (accountCreateContract.getType().getNumber() == ASSET_ISSUE) {
+        AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();
+        PersonalInfo personalInfo = accountCreateContract.getPersonalInfo();
+        AppAccountIndexCapsule appAccountIndexCapsule =  new AppAccountIndexCapsule(
+                personalInfo,  accountCreateContract.getAccountAddress(), timestamp);
+        byte[] key = personalInfo.getIdentity().concat(personalInfo.getAppID()).trim().getBytes();
+        appAccountIndexStore.put(key, appAccountIndexCapsule);
+      }
 
       ret.setStatus(fee, code.SUCESS);
     } catch (InvalidProtocolBufferException e) {
@@ -91,7 +97,8 @@ public class CreateAccountActuator extends AbstractActuator {
     }
 
     AccountCapsule accountCapsule = accountStore.get(ownerAddress);
-    if (accountCapsule == null) {
+    //排除商家注册
+    if (accountCapsule == null && contract.getType().getNumber() != NORMAL) {
       String readableOwnerAddress = StringUtil.createReadableString(ownerAddress);
       throw new ContractValidateException("Account[" + readableOwnerAddress + "] not exists");
     }
