@@ -161,6 +161,7 @@ message Account {
   Permission owner_permission = 31;
   Permission witness_permission = 32;
   repeated Permission active_permission = 33;
+  PersonalInfo personal_info = 34;
 }
 
 

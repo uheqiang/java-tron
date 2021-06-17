@@ -14,6 +14,7 @@ import org.tron.core.exception.ContractValidateException;
 import org.tron.core.store.AccountStore;
 import org.tron.core.store.AppAccountIndexStore;
 import org.tron.core.store.DynamicPropertiesStore;
+import org.tron.protos.Protocol.AccountType;
 import org.tron.protos.Protocol.PersonalInfo;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.Transaction.Result.code;
@@ -21,11 +22,6 @@ import org.tron.protos.contract.AccountContract.AccountCreateContract;
 
 @Slf4j(topic = "actuator")
 public class CreateAccountActuator extends AbstractActuator {
-
-  //AccountType.AssetIssue = 1
-  private static final int ASSET_ISSUE = 1;
-  //AccountType.Normal = 0
-  private static final int NORMAL = 0;
 
   public CreateAccountActuator() {
     super(ContractType.AccountCreateContract, AccountCreateContract.class);
@@ -43,14 +39,19 @@ public class CreateAccountActuator extends AbstractActuator {
     AccountStore accountStore = chainBaseManager.getAccountStore();
     try {
       long timestamp = dynamicStore.getLatestBlockHeaderTimestamp();
+
       AccountCreateContract accountCreateContract = any.unpack(AccountCreateContract.class);
-      boolean withDefaultPermission = dynamicStore.getAllowMultiSign() == 1;
-      AccountCapsule accountCapsule = new AccountCapsule(accountCreateContract,
-              timestamp, withDefaultPermission, dynamicStore);
+
+      AccountCapsule accountCapsule = new AccountCapsule(
+              accountCreateContract.getAccountAddress(),
+              accountCreateContract.getType(),
+              timestamp,
+              accountCreateContract.getPersonalInfo());
+
       accountStore.put(accountCreateContract.getAccountAddress().toByteArray(), accountCapsule);
 
-      //只有商家中的用户注册才与商家关联起来
-      if (accountCreateContract.getType().getNumber() == ASSET_ISSUE) {
+      // 只有商家中的用户注册才与商家关联起来
+      if (accountCreateContract.getType().getNumber() == AccountType.AssetIssue_VALUE) {
         AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();
         PersonalInfo personalInfo = accountCreateContract.getPersonalInfo();
         AppAccountIndexCapsule appAccountIndexCapsule =  new AppAccountIndexCapsule(
@@ -90,17 +91,17 @@ public class CreateAccountActuator extends AbstractActuator {
       throw new ContractValidateException(e.getMessage());
     }
 
-    // owneraddress：trusted node address
+    // 可信节点地址 or 称为商家地址
     byte[] ownerAddress = contract.getOwnerAddress().toByteArray();
     if (!Commons.addressValid(ownerAddress)) {
       throw new ContractValidateException("Invalid ownerAddress");
     }
 
     AccountCapsule accountCapsule = accountStore.get(ownerAddress);
-    //排除商家注册
-    if (accountCapsule == null && contract.getType().getNumber() != NORMAL) {
+    // 检查商家是否注册
+    if (accountCapsule == null && contract.getType().getNumber() == AccountType.Normal_VALUE) {
       String readableOwnerAddress = StringUtil.createReadableString(ownerAddress);
-      throw new ContractValidateException("Account[" + readableOwnerAddress + "] not exists");
+      throw new ContractValidateException("Business[" + readableOwnerAddress + "] not exists");
     }
 
     byte[] accountAddress = contract.getAccountAddress().toByteArray();
@@ -108,18 +109,19 @@ public class CreateAccountActuator extends AbstractActuator {
       throw new ContractValidateException("Invalid account address");
     }
 
-    // 验证地址已存在
+    // 验证用户地址已存在
     if (accountStore.has(accountAddress)) {
-      throw new ContractValidateException("Account has existed");
+      String readableAddress = StringUtil.createReadableString(accountAddress);
+      throw new ContractValidateException("Account[" + readableAddress + "] has existed");
     }
 
-    //验证该身份已经在app上已经注册
-    if (contract.getType().getNumber() == ASSET_ISSUE) {
-      //检查该用户已在某一个app上已注册
+    // 验证用户身份已经在商家中已经注册
+    if (contract.getType().getNumber() == AccountType.AssetIssue_VALUE) {
+      // 检查该用户已在某一个商家中已注册
       PersonalInfo personalInfo = contract.getPersonalInfo();
       String appId = personalInfo.getAppID();
       String identity = personalInfo.getIdentity();
-      String key = identity.concat(appId);
+      String key = identity.concat(appId).trim();
       AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();
       AppAccountIndexCapsule appAccountIndexCapsule = appAccountIndexStore.get(key.getBytes());
       if (appAccountIndexCapsule != null) {

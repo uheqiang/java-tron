@@ -22,9 +22,11 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.List;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.jca.cci.CciOperationNotSupportedException;
 import org.tron.common.utils.ByteArray;
 import org.tron.core.store.AssetIssueStore;
 import org.tron.core.store.DynamicPropertiesStore;
+import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.Account;
 import org.tron.protos.Protocol.Account.AccountResource;
 import org.tron.protos.Protocol.Account.Builder;
@@ -98,11 +100,12 @@ public class AccountCapsule implements ProtoCapsule<Account>, Comparable<Account
           .build();
     } else {
       this.account = Account.newBuilder()
-          .setType(contract.getType())
-          .setAddress(contract.getAccountAddress())
-          .setTypeValue(contract.getTypeValue())
-          .setCreateTime(createTime)
-          .build();
+              .setType(contract.getType())
+              .setAddress(contract.getAccountAddress())
+              .setTypeValue(contract.getTypeValue())
+              .setCreateTime(createTime)
+              .setPersonalInfo(contract.getPersonalInfo())
+              .build();
     }
   }
 
@@ -162,6 +165,15 @@ public class AccountCapsule implements ProtoCapsule<Account>, Comparable<Account
           .build();
     }
 
+  }
+
+  public AccountCapsule(ByteString address, AccountType accountType,  long createTime, Protocol.PersonalInfo info) {
+      this.account = Account.newBuilder()
+              .setType(accountType)
+              .setAddress(address)
+              .setCreateTime(createTime)
+              .setPersonalInfo(info)
+              .build();
   }
 
   /**
