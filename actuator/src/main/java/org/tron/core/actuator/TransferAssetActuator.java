@@ -60,41 +60,37 @@ public class TransferAssetActuator extends AbstractActuator {
       byte[] ownerAddress = transferAssetContract.getOwnerAddress().toByteArray();
       byte[] toAddress = transferAssetContract.getToAddress().toByteArray();
       AccountCapsule toAccountCapsule = accountStore.get(toAddress);
-      if (toAccountCapsule == null) {
-        boolean withDefaultPermission =
-            dynamicStore.getAllowMultiSign() == 1;
+
+      /*if (toAccountCapsule == null) {
+        boolean withDefaultPermission = dynamicStore.getAllowMultiSign() == 1;
         toAccountCapsule = new AccountCapsule(ByteString.copyFrom(toAddress), AccountType.Normal,
             dynamicStore.getLatestBlockHeaderTimestamp(), withDefaultPermission, dynamicStore);
         accountStore.put(toAddress, toAccountCapsule);
-
         fee = fee + dynamicStore.getCreateNewAccountFeeInSystemContract();
-      }
+      }*/
+
       ByteString assetName = transferAssetContract.getAssetName();
       long amount = transferAssetContract.getAmount();
 
-      Commons.adjustBalance(accountStore, ownerAddress, -fee);
-      Commons.adjustBalance(accountStore, accountStore.getBlackhole().createDbKey(), fee);
+      //Commons.adjustBalance(accountStore, ownerAddress, -fee);
+      //Commons.adjustBalance(accountStore, accountStore.getBlackhole().createDbKey(), fee);
 
       AccountCapsule ownerAccountCapsule = accountStore.get(ownerAddress);
-      if (!ownerAccountCapsule
-          .reduceAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueStore)) {
+      if (!ownerAccountCapsule.reduceAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueStore)) {
         throw new ContractExeException("reduceAssetAmount failed !");
       }
       accountStore.put(ownerAddress, ownerAccountCapsule);
 
-      toAccountCapsule
-          .addAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueStore);
+      toAccountCapsule.addAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueStore);
       accountStore.put(toAddress, toAccountCapsule);
 
       ret.setStatus(fee, code.SUCESS);
-    } catch (BalanceInsufficientException e) {
+    } /*catch (BalanceInsufficientException e) {
       logger.debug(e.getMessage(), e);
       ret.setStatus(fee, code.FAILED);
       throw new ContractExeException(e.getMessage());
-    } catch (InvalidProtocolBufferException e) {
-      ret.setStatus(fee, code.FAILED);
-      throw new ContractExeException(e.getMessage());
-    } catch (ArithmeticException e) {
+    } */
+    catch (InvalidProtocolBufferException | ArithmeticException e) {
       ret.setStatus(fee, code.FAILED);
       throw new ContractExeException(e.getMessage());
     }
@@ -116,8 +112,7 @@ public class TransferAssetActuator extends AbstractActuator {
     AssetIssueV2Store assetIssueV2Store = chainBaseManager.getAssetIssueV2Store();
     if (!this.any.is(TransferAssetContract.class)) {
       throw new ContractValidateException(
-          "contract type error, expected type [TransferAssetContract], real type[" + any
-              .getClass() + "]");
+          "contract type error, expected type [TransferAssetContract], real type[" + any.getClass() + "]");
     }
     final TransferAssetContract transferAssetContract;
     try {
@@ -127,7 +122,7 @@ public class TransferAssetActuator extends AbstractActuator {
       throw new ContractValidateException(e.getMessage());
     }
 
-    long fee = calcFee();
+    //long fee = calcFee();
     byte[] ownerAddress = transferAssetContract.getOwnerAddress().toByteArray();
     byte[] toAddress = transferAssetContract.getToAddress().toByteArray();
     byte[] assetName = transferAssetContract.getAssetName().toByteArray();
@@ -139,9 +134,7 @@ public class TransferAssetActuator extends AbstractActuator {
     if (!Commons.addressValid(toAddress)) {
       throw new ContractValidateException("Invalid toAddress");
     }
-//    if (!TransactionUtil.validAssetName(assetName)) {
-//      throw new ContractValidateException("Invalid assetName");
-//    }
+
     if (amount <= 0) {
       throw new ContractValidateException("Amount must be greater than 0.");
     }
@@ -155,8 +148,12 @@ public class TransferAssetActuator extends AbstractActuator {
       throw new ContractValidateException("No owner account!");
     }
 
-    if (!Commons.getAssetIssueStoreFinal(dynamicStore, assetIssueStore, assetIssueV2Store)
-        .has(assetName)) {
+    /*AccountCapsule toAccount = accountStore.get(toAddress);
+    if (toAccount == null) {
+      throw new ContractValidateException("No receive Account!");
+    }*/
+
+    if (!Commons.getAssetIssueStoreFinal(dynamicStore, assetIssueStore, assetIssueV2Store).has(assetName)) {
       throw new ContractValidateException("No asset!");
     }
 
@@ -181,8 +178,7 @@ public class TransferAssetActuator extends AbstractActuator {
     AccountCapsule toAccount = accountStore.get(toAddress);
     if (toAccount != null) {
       //after ForbidTransferToContract proposal, send trx to smartContract by actuator is not allowed.
-      if (dynamicStore.getForbidTransferToContract() == 1
-          && toAccount.getType() == AccountType.Contract) {
+      if (dynamicStore.getForbidTransferToContract() == 1 && toAccount.getType() == AccountType.Contract) {
         throw new ContractValidateException("Cannot transfer asset to smartContract.");
       }
 
@@ -200,11 +196,12 @@ public class TransferAssetActuator extends AbstractActuator {
         }
       }
     } else {
-      fee = fee + dynamicStore.getCreateNewAccountFeeInSystemContract();
+      /*fee = fee + dynamicStore.getCreateNewAccountFeeInSystemContract();
       if (ownerAccount.getBalance() < fee) {
         throw new ContractValidateException(
             "Validate TransferAssetActuator error, insufficient fee.");
-      }
+      }*/
+      throw new ContractValidateException("No receive Account!");
     }
 
     return true;

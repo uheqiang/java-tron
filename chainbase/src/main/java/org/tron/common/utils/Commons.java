@@ -141,7 +141,8 @@ public class Commons {
 
   public static AssetIssueStore getAssetIssueStoreFinal(
       DynamicPropertiesStore dynamicPropertiesStore,
-      AssetIssueStore assetIssueStore, AssetIssueV2Store assetIssueV2Store) {
+      AssetIssueStore assetIssueStore,
+      AssetIssueV2Store assetIssueV2Store) {
     if (dynamicPropertiesStore.getAllowSameTokenName() == 0) {
       return assetIssueStore;
     } else {

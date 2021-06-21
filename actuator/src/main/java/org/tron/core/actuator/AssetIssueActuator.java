@@ -54,6 +54,7 @@ public class AssetIssueActuator extends AbstractActuator {
       throw new RuntimeException("TransactionResultCapsule is null");
     }
 
+    // default 0
     long fee = calcFee();
     DynamicPropertiesStore dynamicStore = chainBaseManager.getDynamicPropertiesStore();
     AssetIssueStore assetIssueStore = chainBaseManager.getAssetIssueStore();
@@ -64,16 +65,6 @@ public class AssetIssueActuator extends AbstractActuator {
       byte[] ownerAddress = assetIssueContract.getOwnerAddress().toByteArray();
       AssetIssueCapsule assetIssueCapsule = new AssetIssueCapsule(assetIssueContract);
       AssetIssueCapsule assetIssueCapsuleV2 = new AssetIssueCapsule(assetIssueContract);
-//      String name = new String(assetIssueCapsule.getName().toByteArray(),
-//          Charset.forName("UTF-8")); // getName().toStringUtf8()
-//      long order = 0;
-//      byte[] key = name.getBytes();
-//      while (this.dbManager.getAssetIssueStore().get(key) != null) {
-//        order++;
-//        String nameKey = AssetIssueCapsule.createDbKeyString(name, order);
-//        key = nameKey.getBytes();
-//      }
-//      assetIssueCapsule.setOrder(order);
       long tokenIdNum = dynamicStore.getTokenIdNum();
       tokenIdNum++;
       assetIssueCapsule.setId(Long.toString(tokenIdNum));
@@ -82,21 +73,19 @@ public class AssetIssueActuator extends AbstractActuator {
 
       if (dynamicStore.getAllowSameTokenName() == 0) {
         assetIssueCapsuleV2.setPrecision(0);
-        assetIssueStore
-            .put(assetIssueCapsule.createDbKey(), assetIssueCapsule);
-        assetIssueV2Store
-            .put(assetIssueCapsuleV2.createDbV2Key(), assetIssueCapsuleV2);
+        assetIssueStore.put(assetIssueCapsule.createDbKey(), assetIssueCapsule);
+        assetIssueV2Store.put(assetIssueCapsuleV2.createDbV2Key(), assetIssueCapsuleV2);
       } else {
-        assetIssueV2Store
-            .put(assetIssueCapsuleV2.createDbV2Key(), assetIssueCapsuleV2);
+        assetIssueV2Store.put(assetIssueCapsuleV2.createDbV2Key(), assetIssueCapsuleV2);
       }
 
-      Commons.adjustBalance(accountStore, ownerAddress, -fee);
-      Commons.adjustBalance(accountStore, accountStore.getBlackhole().getAddress().toByteArray(),
-          fee);//send to blackhole
+      //Commons.adjustBalance(accountStore, ownerAddress, -fee);
+      //send to blackhole
+      //Commons.adjustBalance(accountStore, accountStore.getBlackhole().getAddress().toByteArray(), fee);
 
       AccountCapsule accountCapsule = accountStore.get(ownerAddress);
-      List<FrozenSupply> frozenSupplyList = assetIssueContract.getFrozenSupplyList();
+      long remainSupply = assetIssueContract.getTotalSupply();
+      /*List<FrozenSupply> frozenSupplyList = assetIssueContract.getFrozenSupplyList();
       Iterator<FrozenSupply> iterator = frozenSupplyList.iterator();
       long remainSupply = assetIssueContract.getTotalSupply();
       List<Frozen> frozenList = new ArrayList<>();
@@ -111,30 +100,23 @@ public class AssetIssueActuator extends AbstractActuator {
             .build();
         frozenList.add(newFrozen);
         remainSupply -= next.getFrozenAmount();
-      }
+      }*/
 
+      //ALLOW_SAME_TOKEN_NAME == 0，表示不运行创建相同名称的Token
       if (dynamicStore.getAllowSameTokenName() == 0) {
         accountCapsule.addAsset(assetIssueCapsule.createDbKey(), remainSupply);
       }
       accountCapsule.setAssetIssuedName(assetIssueCapsule.createDbKey());
       accountCapsule.setAssetIssuedID(assetIssueCapsule.createDbV2Key());
       accountCapsule.addAssetV2(assetIssueCapsuleV2.createDbV2Key(), remainSupply);
-      accountCapsule.setInstance(accountCapsule.getInstance().toBuilder()
-          .addAllFrozenSupply(frozenList).build());
+      //accountCapsule.setInstance(accountCapsule.getInstance().toBuilder().addAllFrozenSupply(frozenList).build());
+      accountCapsule.setInstance(accountCapsule.getInstance());
 
       accountStore.put(ownerAddress, accountCapsule);
 
       ret.setAssetIssueID(Long.toString(tokenIdNum));
       ret.setStatus(fee, code.SUCESS);
-    } catch (InvalidProtocolBufferException e) {
-      logger.debug(e.getMessage(), e);
-      ret.setStatus(fee, code.FAILED);
-      throw new ContractExeException(e.getMessage());
-    } catch (BalanceInsufficientException e) {
-      logger.debug(e.getMessage(), e);
-      ret.setStatus(fee, code.FAILED);
-      throw new ContractExeException(e.getMessage());
-    } catch (ArithmeticException e) {
+    } catch (InvalidProtocolBufferException /*| BalanceInsufficientException*/ | ArithmeticException e) {
       logger.debug(e.getMessage(), e);
       ret.setStatus(fee, code.FAILED);
       throw new ContractExeException(e.getMessage());
@@ -156,8 +138,7 @@ public class AssetIssueActuator extends AbstractActuator {
     AccountStore accountStore = chainBaseManager.getAccountStore();
     if (!this.any.is(AssetIssueContract.class)) {
       throw new ContractValidateException(
-          "contract type error,expected type [AssetIssueContract],real type[" + any
-              .getClass() + "]");
+          "contract type error,expected type [AssetIssueContract],real type[" + any.getClass() + "]");
     }
 
     final AssetIssueContract assetIssueContract;
@@ -186,26 +167,30 @@ public class AssetIssueActuator extends AbstractActuator {
 
     int precision = assetIssueContract.getPrecision();
     if (precision != 0 && dynamicStore.getAllowSameTokenName() != 0) {
-      if (precision < 0 || precision > 6) {
+      /*if (precision < 0 || precision > 6) {
         throw new ContractValidateException("precision cannot exceed 6");
+      }*/
+      if (precision != 1) {
+        throw new ContractValidateException("precision should be 1");
       }
     }
 
+    //abr是token的简称
     if ((!assetIssueContract.getAbbr().isEmpty()) && !TransactionUtil
         .validAssetName(assetIssueContract.getAbbr().toByteArray())) {
       throw new ContractValidateException("Invalid abbreviation for token");
     }
 
-    if (!TransactionUtil.validUrl(assetIssueContract.getUrl().toByteArray())) {
+    //去掉发行官网和token说明
+    /*if (!TransactionUtil.validUrl(assetIssueContract.getUrl().toByteArray())) {
       throw new ContractValidateException("Invalid url");
     }
-
-    if (!TransactionUtil
-        .validAssetDescription(assetIssueContract.getDescription().toByteArray())) {
+    if (!TransactionUtil.validAssetDescription(assetIssueContract.getDescription().toByteArray())) {
       throw new ContractValidateException("Invalid description");
-    }
+    }*/
 
-    if (assetIssueContract.getStartTime() == 0) {
+    //去掉起止时间
+    /*if (assetIssueContract.getStartTime() == 0) {
       throw new ContractValidateException("Start time should be not empty");
     }
     if (assetIssueContract.getEndTime() == 0) {
@@ -216,7 +201,7 @@ public class AssetIssueActuator extends AbstractActuator {
     }
     if (assetIssueContract.getStartTime() <= dynamicStore.getLatestBlockHeaderTimestamp()) {
       throw new ContractValidateException("Start time should be greater than HeadBlockTime");
-    }
+    }*/
 
     if (dynamicStore.getAllowSameTokenName() == 0
         && assetIssueStore.get(assetIssueContract.getName().toByteArray())
@@ -228,36 +213,35 @@ public class AssetIssueActuator extends AbstractActuator {
       throw new ContractValidateException("TotalSupply must greater than 0!");
     }
 
-    if (assetIssueContract.getTrxNum() <= 0) {
+    //与原生币不支持兑换
+    /*if (assetIssueContract.getTrxNum() <= 0) {
       throw new ContractValidateException("TrxNum must greater than 0!");
     }
-
     if (assetIssueContract.getNum() <= 0) {
       throw new ContractValidateException("Num must greater than 0!");
-    }
+    }*/
 
-    if (assetIssueContract.getPublicFreeAssetNetUsage() != 0) {
+    //去掉带宽
+    /*if (assetIssueContract.getPublicFreeAssetNetUsage() != 0) {
       throw new ContractValidateException("PublicFreeAssetNetUsage must be 0!");
     }
-
     if (assetIssueContract.getFrozenSupplyCount()
         > dynamicStore.getMaxFrozenSupplyNumber()) {
       throw new ContractValidateException("Frozen supply list length is too long");
     }
-
     if (assetIssueContract.getFreeAssetNetLimit() < 0
         || assetIssueContract.getFreeAssetNetLimit() >=
         dynamicStore.getOneDayNetLimit()) {
       throw new ContractValidateException("Invalid FreeAssetNetLimit");
     }
-
     if (assetIssueContract.getPublicFreeAssetNetLimit() < 0
         || assetIssueContract.getPublicFreeAssetNetLimit() >=
         dynamicStore.getOneDayNetLimit()) {
       throw new ContractValidateException("Invalid PublicFreeAssetNetLimit");
-    }
+    }*/
 
-    long remainSupply = assetIssueContract.getTotalSupply();
+    //不冻结
+    /*long remainSupply = assetIssueContract.getTotalSupply();
     long minFrozenSupplyTime = dynamicStore.getMinFrozenSupplyTime();
     long maxFrozenSupplyTime = dynamicStore.getMaxFrozenSupplyTime();
     List<FrozenSupply> frozenList = assetIssueContract.getFrozenSupplyList();
@@ -278,7 +262,7 @@ public class AssetIssueActuator extends AbstractActuator {
                 + "and more than " + minFrozenSupplyTime + " days");
       }
       remainSupply -= next.getFrozenAmount();
-    }
+    }*/
 
     AccountCapsule accountCapsule = accountStore.get(ownerAddress);
     if (accountCapsule == null) {
@@ -289,25 +273,10 @@ public class AssetIssueActuator extends AbstractActuator {
       throw new ContractValidateException("An account can only issue one asset");
     }
 
-    if (accountCapsule.getBalance() < calcFee()) {
+    //去掉free
+    /*if (accountCapsule.getBalance() < calcFee()) {
       throw new ContractValidateException("No enough balance for fee!");
-    }
-//
-//    AssetIssueCapsule assetIssueCapsule = new AssetIssueCapsule(assetIssueContract);
-//    String name = new String(assetIssueCapsule.getName().toByteArray(),
-//        Charset.forName("UTF-8")); // getName().toStringUtf8()
-//    long order = 0;
-//    byte[] key = name.getBytes();
-//    while (this.dbManager.getAssetIssueStore().get(key) != null) {
-//      order++;
-//      String nameKey = AssetIssueCapsule.createDbKeyString(name, order);
-//      key = nameKey.getBytes();
-//    }
-//    assetIssueCapsule.setOrder(order);
-//
-//    if (!TransactionUtil.validAssetName(assetIssueCapsule.createDbKey())) {
-//      throw new ContractValidateException("Invalid assetID");
-//    }
+    }*/
 
     return true;
   }

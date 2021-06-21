@@ -614,6 +614,8 @@ public class AccountCapsule implements ProtoCapsule<Account>, Comparable<Account
 
   /**
    * add asset.
+   * @param key asset name
+   * @param value asset value
    */
   public boolean addAsset(byte[] key, long value) {
     Map<String, Long> assetMap = this.account.getAssetMap();
@@ -627,6 +629,11 @@ public class AccountCapsule implements ProtoCapsule<Account>, Comparable<Account
     return true;
   }
 
+  /**
+   * add asset.
+   * @param key token id
+   * @param value asset value
+   */
   public boolean addAssetV2(byte[] key, long value) {
     String tokenID = ByteArray.toStr(key);
     Map<String, Long> assetV2Map = this.account.getAssetV2Map();

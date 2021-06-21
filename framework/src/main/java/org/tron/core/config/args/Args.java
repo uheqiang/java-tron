@@ -971,7 +971,7 @@ public class Args {
 
     INSTANCE.forbidTransferToContract =
         config.hasPath("committee.forbidTransferToContract") ? config
-            .getInt("committee.forbidTransferToContract") : 0;
+            .getInt("committee.forbidTransferToContract") : 1;
 
     INSTANCE.tcpNettyWorkThreadNum = config.hasPath(Constant.NODE_TCP_NETTY_WORK_THREAD_NUM) ? config
         .getInt(Constant.NODE_TCP_NETTY_WORK_THREAD_NUM) : 0;

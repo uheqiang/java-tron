@@ -46,10 +46,12 @@ message UnfreezeAssetContract {
 
 message UpdateAssetContract {
     bytes owner_address = 1;
-    bytes description = 2;
+    /*bytes description = 2;
     bytes url = 3;
     int64 new_limit = 4;
-    int64 new_public_limit = 5;
+    int64 new_public_limit = 5;*/
+    int64 mint_tokens = 2;
+    bytes asset_name = 3;
 }
 
 message ParticipateAssetIssueContract {
