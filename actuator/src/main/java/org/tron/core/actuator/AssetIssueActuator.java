@@ -73,7 +73,9 @@ public class AssetIssueActuator extends AbstractActuator {
 
       if (dynamicStore.getAllowSameTokenName() == 0) {
         assetIssueCapsuleV2.setPrecision(0);
+        //key is asset name
         assetIssueStore.put(assetIssueCapsule.createDbKey(), assetIssueCapsule);
+        //key is asset Id
         assetIssueV2Store.put(assetIssueCapsuleV2.createDbV2Key(), assetIssueCapsuleV2);
       } else {
         assetIssueV2Store.put(assetIssueCapsuleV2.createDbV2Key(), assetIssueCapsuleV2);
