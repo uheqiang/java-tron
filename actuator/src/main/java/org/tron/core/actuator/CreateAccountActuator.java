@@ -98,7 +98,7 @@ public class CreateAccountActuator extends AbstractActuator {
     }
 
     AccountCapsule accountCapsule = accountStore.get(ownerAddress);
-    // 检查商家是否注册
+    // 检查商家是否已注册
     if (accountCapsule == null && contract.getType().getNumber() == AccountType.Normal_VALUE) {
       String readableOwnerAddress = StringUtil.createReadableString(ownerAddress);
       throw new ContractValidateException("Business[" + readableOwnerAddress + "] not exists");
@@ -119,7 +119,9 @@ public class CreateAccountActuator extends AbstractActuator {
     if (contract.getType().getNumber() == AccountType.AssetIssue_VALUE) {
       // 检查该用户已在某一个商家中已注册
       PersonalInfo personalInfo = contract.getPersonalInfo();
+      // 商家ID
       String appId = personalInfo.getAppID();
+      // 用户身份
       String identity = personalInfo.getIdentity();
       String key = identity.concat(appId).trim();
       AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();

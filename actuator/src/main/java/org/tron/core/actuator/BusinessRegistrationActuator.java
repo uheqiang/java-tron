@@ -6,12 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.tron.common.utils.Commons;
 import org.tron.common.utils.StringUtil;
 import org.tron.core.capsule.AccountCapsule;
-import org.tron.core.capsule.AppAccountIndexCapsule;
 import org.tron.core.capsule.TransactionResultCapsule;
 import org.tron.core.exception.ContractExeException;
 import org.tron.core.exception.ContractValidateException;
 import org.tron.core.store.AccountStore;
-import org.tron.core.store.AppAccountIndexStore;
 import org.tron.core.store.DynamicPropertiesStore;
 import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
@@ -49,7 +47,7 @@ public class BusinessRegistrationActuator extends AbstractActuator {
             AccountCapsule accountCapsule = new AccountCapsule(businessCreateContract.getAccountAddress(),
                     businessCreateContract.getType(), timestamp,  personalInfo);
 
-            String keyString = personalInfo.getAppID().concat(personalInfo.getIdentity()).trim();
+            String keyString = personalInfo.getAppID().trim();
             accountStore.put(keyString.getBytes(), accountCapsule);
             accountStore.put(businessCreateContract.getAccountAddress().toByteArray(), accountCapsule);
             ret.setStatus(fee, Protocol.Transaction.Result.code.SUCESS);
@@ -89,7 +87,7 @@ public class BusinessRegistrationActuator extends AbstractActuator {
         }
 
         Protocol.PersonalInfo personalInfo = contract.getPersonalInfo();
-        String keyString = personalInfo.getAppID().concat(personalInfo.getIdentity()).trim();
+        String keyString = personalInfo.getAppID().trim();
         // 检查商家是否注册
         if (accountStore.has(keyString.getBytes()) && contract.getType().getNumber() == Protocol.AccountType.Normal_VALUE) {
             String readableOwnerAddress = StringUtil.createReadableString(accountAddress);
