@@ -24,6 +24,7 @@ import org.tron.protos.Protocol.AccountType;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.Transaction.Result.code;
 import org.tron.protos.contract.BalanceContract.FreezeBalanceContract;
+import org.tron.protos.contract.Common;
 
 @Slf4j(topic = "actuator")
 public class FreezeBalanceActuator extends AbstractActuator {
@@ -50,50 +51,56 @@ public class FreezeBalanceActuator extends AbstractActuator {
       ret.setStatus(fee, code.FAILED);
       throw new ContractExeException(e.getMessage());
     }
-    AccountCapsule accountCapsule = accountStore
-        .get(freezeBalanceContract.getOwnerAddress().toByteArray());
+    AccountCapsule accountCapsule = accountStore.get(freezeBalanceContract.getOwnerAddress().toByteArray());
 
     long now = dynamicStore.getLatestBlockHeaderTimestamp();
-    long duration = freezeBalanceContract.getFrozenDuration() * 86_400_000;
-
-    long newBalance = accountCapsule.getBalance() - freezeBalanceContract.getFrozenBalance();
+    //long duration = freezeBalanceContract.getFrozenDuration() * 86_400_000;
 
     long frozenBalance = freezeBalanceContract.getFrozenBalance();
-    long expireTime = now + duration;
+    long newBalance = accountCapsule.getBalance() - frozenBalance;
+
+    //long expireTime = now + duration;
+    long expireTime = now;
     byte[] ownerAddress = freezeBalanceContract.getOwnerAddress().toByteArray();
     byte[] receiverAddress = freezeBalanceContract.getReceiverAddress().toByteArray();
 
-    switch (freezeBalanceContract.getResource()) {
+    /*switch (freezeBalanceContract.getResource()) {
       case BANDWIDTH:
-        if (!ArrayUtils.isEmpty(receiverAddress)
-            && dynamicStore.supportDR()) {
-          delegateResource(ownerAddress, receiverAddress, true,
-              frozenBalance, expireTime);
+        if (!ArrayUtils.isEmpty(receiverAddress) && dynamicStore.supportDR()) {
+          delegateResource(ownerAddress, receiverAddress, true, frozenBalance, expireTime);
           accountCapsule.addDelegatedFrozenBalanceForBandwidth(frozenBalance);
         } else {
-          long newFrozenBalanceForBandwidth =
-              frozenBalance + accountCapsule.getFrozenBalance();
+          long newFrozenBalanceForBandwidth = frozenBalance + accountCapsule.getFrozenBalance();
           accountCapsule.setFrozenForBandwidth(newFrozenBalanceForBandwidth, expireTime);
         }
-        dynamicStore
-            .addTotalNetWeight(frozenBalance / 1000_000L);
+        dynamicStore.addTotalNetWeight(frozenBalance / 1000_000L);
         break;
       case ENERGY:
-        if (!ArrayUtils.isEmpty(receiverAddress)
-            && dynamicStore.supportDR()) {
-          delegateResource(ownerAddress, receiverAddress, false,
-              frozenBalance, expireTime);
+        if (!ArrayUtils.isEmpty(receiverAddress) && dynamicStore.supportDR()) {
+          delegateResource(ownerAddress, receiverAddress, false, frozenBalance, expireTime);
           accountCapsule.addDelegatedFrozenBalanceForEnergy(frozenBalance);
         } else {
-          long newFrozenBalanceForEnergy =
-              frozenBalance + accountCapsule.getAccountResource()
+          long newFrozenBalanceForEnergy = frozenBalance + accountCapsule.getAccountResource()
                   .getFrozenBalanceForEnergy()
                   .getFrozenBalance();
           accountCapsule.setFrozenForEnergy(newFrozenBalanceForEnergy, expireTime);
         }
-        dynamicStore
-            .addTotalEnergyWeight(frozenBalance / 1000_000L);
+        dynamicStore.addTotalEnergyWeight(frozenBalance / 1000_000L);
         break;
+    }*/
+
+    if (freezeBalanceContract.getResource().getNumber() == Common.ResourceCode.ENERGY_VALUE) {
+      if (!ArrayUtils.isEmpty(receiverAddress) && dynamicStore.supportDR()) {
+        delegateResource(ownerAddress, receiverAddress, false, frozenBalance, expireTime);
+        accountCapsule.addDelegatedFrozenBalanceForEnergy(frozenBalance);
+      } else {
+        long newFrozenBalanceForEnergy = frozenBalance * dynamicStore.getFuelExchangeRate() +
+                accountCapsule.getAccountResource()
+                .getFrozenBalanceForEnergy()
+                .getFrozenBalance();
+        accountCapsule.setFrozenForEnergy(newFrozenBalanceForEnergy, expireTime);
+      }
+      dynamicStore.addTotalEnergyWeight(frozenBalance / 1000_000L);
     }
 
     accountCapsule.setBalance(newBalance);
@@ -117,8 +124,7 @@ public class FreezeBalanceActuator extends AbstractActuator {
     DynamicPropertiesStore dynamicStore = chainBaseManager.getDynamicPropertiesStore();
     if (!any.is(FreezeBalanceContract.class)) {
       throw new ContractValidateException(
-          "contract type error,expected type [FreezeBalanceContract],real type[" + any
-              .getClass() + "]");
+          "contract type error,expected type [FreezeBalanceContract],real type[" + any.getClass() + "]");
     }
 
     final FreezeBalanceContract freezeBalanceContract;
@@ -136,22 +142,22 @@ public class FreezeBalanceActuator extends AbstractActuator {
     AccountCapsule accountCapsule = accountStore.get(ownerAddress);
     if (accountCapsule == null) {
       String readableOwnerAddress = StringUtil.createReadableString(ownerAddress);
-      throw new ContractValidateException(
-          "Account[" + readableOwnerAddress + "] not exists");
+      throw new ContractValidateException("Account[" + readableOwnerAddress + "] not exists");
     }
 
+    //需要被兑换的trc10
     long frozenBalance = freezeBalanceContract.getFrozenBalance();
     if (frozenBalance <= 0) {
       throw new ContractValidateException("frozenBalance must be positive");
     }
-    if (frozenBalance < 1_000_000L) {
+    /*if (frozenBalance < 1_000_000L) {
       throw new ContractValidateException("frozenBalance must be more than 1TRX");
-    }
+    }*/
 
-    int frozenCount = accountCapsule.getFrozenCount();
+    /*int frozenCount = accountCapsule.getFrozenCount();
     if (!(frozenCount == 0 || frozenCount == 1)) {
       throw new ContractValidateException("frozenCount must be 0 or 1");
-    }
+    }*/
     if (frozenBalance > accountCapsule.getBalance()) {
       throw new ContractValidateException("frozenBalance must be less than accountBalance");
     }
@@ -161,7 +167,8 @@ public class FreezeBalanceActuator extends AbstractActuator {
 //      throw new ContractValidateException("max frozen number is: " + maxFrozenNumber);
 //    }
 
-    long frozenDuration = freezeBalanceContract.getFrozenDuration();
+    //冻结天数
+    /*long frozenDuration = freezeBalanceContract.getFrozenDuration();
     long minFrozenTime = dynamicStore.getMinFrozenTime();
     long maxFrozenTime = dynamicStore.getMaxFrozenTime();
 
@@ -171,25 +178,23 @@ public class FreezeBalanceActuator extends AbstractActuator {
       throw new ContractValidateException(
           "frozenDuration must be less than " + maxFrozenTime + " days "
               + "and more than " + minFrozenTime + " days");
-    }
+    }*/
 
     switch (freezeBalanceContract.getResource()) {
-      case BANDWIDTH:
-        break;
+      /*case BANDWIDTH:
+        break;*/
       case ENERGY:
         break;
       default:
-        throw new ContractValidateException(
-            "ResourceCode error,valid ResourceCode[BANDWIDTH、ENERGY]");
+        //throw new ContractValidateException("ResourceCode error,valid ResourceCode[BANDWIDTH、ENERGY]");
+        throw new ContractValidateException("ResourceCode error,valid ResourceCode[ENERGY]");
     }
 
-    //todo：need version control and config for delegating resource
     byte[] receiverAddress = freezeBalanceContract.getReceiverAddress().toByteArray();
     //If the receiver is included in the contract, the receiver will receive the resource.
     if (!ArrayUtils.isEmpty(receiverAddress) && dynamicStore.supportDR()) {
       if (Arrays.equals(receiverAddress, ownerAddress)) {
-        throw new ContractValidateException(
-            "receiverAddress must not be the same as ownerAddress");
+        throw new ContractValidateException("receiverAddress must not be the same as ownerAddress");
       }
 
       if (!Commons.addressValid(receiverAddress)) {
@@ -199,17 +204,12 @@ public class FreezeBalanceActuator extends AbstractActuator {
       AccountCapsule receiverCapsule = accountStore.get(receiverAddress);
       if (receiverCapsule == null) {
         String readableOwnerAddress = StringUtil.createReadableString(receiverAddress);
-        throw new ContractValidateException(
-            "Account[" + readableOwnerAddress + "] not exists");
+        throw new ContractValidateException("Account[" + readableOwnerAddress + "] not exists");
       }
 
-      if (dynamicStore.getAllowTvmConstantinople() == 1
-          && receiverCapsule.getType() == AccountType.Contract) {
-        throw new ContractValidateException(
-            "Do not allow delegate resources to contract addresses");
-
+      if (dynamicStore.getAllowTvmConstantinople() == 1 && receiverCapsule.getType() == AccountType.Contract) {
+        throw new ContractValidateException("Do not allow delegate resources to contract addresses");
       }
-
     }
 
     return true;

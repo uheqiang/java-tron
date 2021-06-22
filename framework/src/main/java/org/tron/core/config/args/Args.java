@@ -963,7 +963,7 @@ public class Args {
 
     INSTANCE.allowTvmConstantinople =
         config.hasPath(Constant.COMMITTEE_ALLOW_TVM_CONSTANTINOPLE) ? config
-            .getInt(Constant.COMMITTEE_ALLOW_TVM_CONSTANTINOPLE) : 0;
+            .getInt(Constant.COMMITTEE_ALLOW_TVM_CONSTANTINOPLE) : 1;
 
     INSTANCE.allowTvmSolidity059 =
         config.hasPath(Constant.COMMITTEE_ALLOW_TVM_SOLIDITY059) ? config

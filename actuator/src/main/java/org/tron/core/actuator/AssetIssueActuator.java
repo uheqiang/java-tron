@@ -290,7 +290,7 @@ public class AssetIssueActuator extends AbstractActuator {
 
   @Override
   public long calcFee() {
-    return chainBaseManager.getDynamicPropertiesStore().getAssetIssueFee();
+    return 0;//chainBaseManager.getDynamicPropertiesStore().getAssetIssueFee();
   }
 
   public long calcUsage() {

@@ -140,6 +140,7 @@ public class CreateAccountActuator extends AbstractActuator {
 
   @Override
   public long calcFee() {
-    return chainBaseManager.getDynamicPropertiesStore().getCreateNewAccountFeeInSystemContract();
+    //return chainBaseManager.getDynamicPropertiesStore().getCreateNewAccountFeeInSystemContract();
+    return 0;
   }
 }
