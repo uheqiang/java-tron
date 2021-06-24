@@ -122,6 +122,8 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
 
   //交易燃料兑换汇率
   private static final byte[] FUEL_EXCHANGE_RATE = "FUEL_EXCHANGE_RATE".getBytes();
+  private static final byte[] CREATE_CONTRACT_FEE = "CREATE_CONTRACT_FEE".getBytes();
+  private static final byte[] CALL_CONTRACT_FEE = "CALL_CONTRACT_FEE".getBytes();
 
   @Autowired
   private DynamicPropertiesStore(@Value("properties") String dbName) {
@@ -604,7 +606,20 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
       this.saveFuelExchangeRate(1);
     }
 
+    try {
+      this.getCallContractFee();
+    } catch (IllegalArgumentException e) {
+      this.saveCallContractFee(1);
+    }
+
+    try {
+      this.getCreateContractFee();
+    } catch (IllegalArgumentException e) {
+      this.saveCreateContractFee(1);
+    }
+
   }
+
 
   public String intArrayToString(int[] a) {
     StringBuilder sb = new StringBuilder();
@@ -636,6 +651,29 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
             () -> new IllegalArgumentException("not found TOKEN_ID_NUM"));
   }
 
+  public void saveCreateContractFee(int fee) {
+    this.put(CREATE_CONTRACT_FEE, new BytesCapsule(ByteArray.fromInt(fee)));
+  }
+
+  public int getCreateContractFee() {
+    return Optional.ofNullable(getUnchecked(CREATE_CONTRACT_FEE))
+            .map(BytesCapsule::getData)
+            .map(ByteArray::toInt)
+            .orElseThrow(
+                    () -> new IllegalArgumentException("not found CREATE_ACCOUNT_FEE"));
+  }
+
+  public void saveCallContractFee(int fee) {
+    this.put(CALL_CONTRACT_FEE, new BytesCapsule(ByteArray.fromInt(fee)));
+  }
+
+  public int getCallContractFee() {
+    return Optional.ofNullable(getUnchecked(CALL_CONTRACT_FEE))
+            .map(BytesCapsule::getData)
+            .map(ByteArray::toInt)
+            .orElseThrow(
+                    () -> new IllegalArgumentException("not found CALL_CONTRACT_FEE"));
+  }
 
   public void saveFuelExchangeRate(int rate) {
     this.put(FUEL_EXCHANGE_RATE, new BytesCapsule(ByteArray.fromInt(rate)));

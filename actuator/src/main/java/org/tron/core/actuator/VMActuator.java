@@ -170,6 +170,7 @@ public class VMActuator implements Actuator2 {
         vm.play(program);
         result = program.getResult();
 
+        //调研合约常量方法，不消耗能量
         if (isConstanCall) {
           long callValue = TransactionUtil.getCallValue(trx.getRawData().getContract(0));
           long callTokenValue = TransactionUtil
@@ -186,6 +187,7 @@ public class VMActuator implements Actuator2 {
           return;
         }
 
+        //创建合约，消费能量
         if (TrxType.TRX_CONTRACT_CREATION_TYPE == trxType && !result.isRevert()) {
           byte[] code = program.getResult().getHReturn();
           long saveCodeEnergy = (long) getLength(code) * EnergyCost.getInstance().getCREATE_DATA();
@@ -202,8 +204,13 @@ public class VMActuator implements Actuator2 {
               repository.saveCode(program.getContractAddress().getNoLeadZeroesData(), code);
             }
           }
+          /*result.spendEnergy(VMConfig.getCreateContractFee());
+          if (VMConfig.allowTvmConstantinople()) {
+            repository.saveCode(program.getContractAddress().getNoLeadZeroesData(), code);
+          }*/
         }
 
+        //发送异常 或 交易被撤销
         if (result.getException() != null || result.isRevert()) {
           result.getDeleteAccounts().clear();
           result.getLogInfoList().clear();
@@ -280,8 +287,7 @@ public class VMActuator implements Actuator2 {
 
   }
 
-  private void create()
-      throws ContractValidateException {
+  private void create() throws ContractValidateException {
     if (!repository.getDynamicPropertiesStore().supportVM()) {
       throw new ContractValidateException("vm work is off, need to be opened by the committee");
     }
@@ -397,19 +403,13 @@ public class VMActuator implements Actuator2 {
     }
     if (VMConfig.allowTvmTransferTrc10()) {
       if (tokenValue > 0) {
-        transferToken(this.repository, callerAddress, contractAddress, String.valueOf(tokenId),
-            tokenValue);
+        transferToken(this.repository, callerAddress, contractAddress, String.valueOf(tokenId), tokenValue);
       }
     }
 
   }
 
-  /**
-   * **
-   */
-
-  private void call()
-      throws ContractValidateException {
+  private void call() throws ContractValidateException {
 
     if (!repository.getDynamicPropertiesStore().supportVM()) {
       logger.info("vm work is off, need to be opened by the committee");
@@ -452,30 +452,24 @@ public class VMActuator implements Actuator2 {
 
     byte[] callerAddress = contract.getOwnerAddress().toByteArray();
     checkTokenValueAndId(tokenValue, tokenId);
-
     byte[] code = repository.getCode(contractAddress);
     if (isNotEmpty(code)) {
-
       long feeLimit = trx.getRawData().getFeeLimit();
       if (feeLimit < 0 || feeLimit > VMConfig.MAX_FEE_LIMIT) {
         logger.info("invalid feeLimit {}", feeLimit);
-        throw new ContractValidateException(
-            "feeLimit must be >= 0 and <= " + VMConfig.MAX_FEE_LIMIT);
+        throw new ContractValidateException("feeLimit must be >= 0 and <= " + VMConfig.MAX_FEE_LIMIT);
       }
       AccountCapsule caller = repository.getAccount(callerAddress);
       long energyLimit;
       if (isConstanCall) {
         energyLimit = VMConstant.ENERGY_LIMIT_IN_CONSTANT_TX;
       } else {
-        AccountCapsule creator = repository
-            .getAccount(deployedContract.getInstance().getOriginAddress().toByteArray());
+        AccountCapsule creator = repository.getAccount(deployedContract.getInstance().getOriginAddress().toByteArray());
         energyLimit = getTotalEnergyLimit(creator, caller, contract, feeLimit, callValue);
       }
 
-      long maxCpuTimeOfOneTx = repository.getDynamicPropertiesStore()
-          .getMaxCpuTimeOfOneTx() * VMConstant.ONE_THOUSAND;
-      long thisTxCPULimitInUs =
-          (long) (maxCpuTimeOfOneTx * getCpuLimitInUsRatio());
+      long maxCpuTimeOfOneTx = repository.getDynamicPropertiesStore().getMaxCpuTimeOfOneTx() * VMConstant.ONE_THOUSAND;
+      long thisTxCPULimitInUs = (long) (maxCpuTimeOfOneTx * getCpuLimitInUsRatio());
       long vmStartInUs = System.nanoTime() / VMConstant.ONE_THOUSAND;
       long vmShouldEndInUs = vmStartInUs + thisTxCPULimitInUs;
       ProgramInvoke programInvoke = programInvokeFactory
@@ -505,15 +499,18 @@ public class VMActuator implements Actuator2 {
     }
     if (VMConfig.allowTvmTransferTrc10()) {
       if (tokenValue > 0) {
-        transferToken(this.repository, callerAddress, contractAddress, String.valueOf(tokenId),
-            tokenValue);
+        transferToken(this.repository, callerAddress, contractAddress, String.valueOf(tokenId), tokenValue);
       }
     }
 
+
+    /*if (VMConfig.allowEntrustedPayment()) {
+
+    }*/
+
   }
 
-  public long getAccountEnergyLimitWithFixRatio(AccountCapsule account, long feeLimit,
-      long callValue) {
+  public long getAccountEnergyLimitWithFixRatio(AccountCapsule account, long feeLimit, long callValue) {
 
     long sunPerEnergy = VMConstant.SUN_PER_ENERGY;
     if (repository.getDynamicPropertiesStore().getEnergyFee() > 0) {
@@ -530,8 +527,7 @@ public class VMActuator implements Actuator2 {
 
   }
 
-  private long getAccountEnergyLimitWithFloatRatio(AccountCapsule account, long feeLimit,
-      long callValue) {
+  private long getAccountEnergyLimitWithFloatRatio(AccountCapsule account, long feeLimit, long callValue) {
 
     long sunPerEnergy = VMConstant.SUN_PER_ENERGY;
     if (repository.getDynamicPropertiesStore().getEnergyFee() > 0) {
@@ -546,8 +542,7 @@ public class VMActuator implements Actuator2 {
     long energyFromFeeLimit;
     long totalBalanceForEnergyFreeze = account.getAllFrozenBalanceForEnergy();
     if (0 == totalBalanceForEnergyFreeze) {
-      energyFromFeeLimit =
-          feeLimit / sunPerEnergy;
+      energyFromFeeLimit = feeLimit / sunPerEnergy;
     } else {
       long totalEnergyFromFreeze = repository
           .calculateGlobalEnergyLimit(account);

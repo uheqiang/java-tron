@@ -98,13 +98,10 @@ public class EnergyProcessor extends ResourceProcessor {
     long energyUsage = accountCapsule.getEnergyUsage();
     long latestConsumeTime = accountCapsule.getAccountResource().getLatestConsumeTimeForEnergy();
     long energyLimit = calculateGlobalEnergyLimit(accountCapsule);
-
     long newEnergyUsage = increase(energyUsage, 0, latestConsumeTime, now);
-
     if (energy > (energyLimit - newEnergyUsage)) {
       return false;
     }
-
     latestConsumeTime = now;
     long latestOperationTime = dynamicPropertiesStore.getLatestBlockHeaderTimestamp();
     newEnergyUsage = increase(newEnergyUsage, energy, latestConsumeTime, now);
@@ -138,14 +135,15 @@ public class EnergyProcessor extends ResourceProcessor {
   }
 
   public long getAccountLeftEnergyFromFreeze(AccountCapsule accountCapsule) {
-    long now = getHeadSlot();
+    /*long now = getHeadSlot();
     long energyUsage = accountCapsule.getEnergyUsage();
     long latestConsumeTime = accountCapsule.getAccountResource().getLatestConsumeTimeForEnergy();
     long energyLimit = calculateGlobalEnergyLimit(accountCapsule);
 
     long newEnergyUsage = increase(energyUsage, 0, latestConsumeTime, now);
 
-    return max(energyLimit - newEnergyUsage, 0); // us
+    return max(energyLimit - newEnergyUsage, 0); // us*/
+    return accountCapsule.getEnergyUsage();
   }
 
   private long getHeadSlot() {

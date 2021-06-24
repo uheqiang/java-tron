@@ -113,33 +113,70 @@ public class ReceiptCapsule {
    * payEnergyBill pay receipt energy bill by energy processor.
    */
   public void payEnergyBill(DynamicPropertiesStore dynamicPropertiesStore,
-      AccountStore accountStore, ForkUtils forkUtils, AccountCapsule origin, AccountCapsule caller,
-      long percent, long originEnergyLimit, EnergyProcessor energyProcessor, long now)
-      throws BalanceInsufficientException {
+                            AccountStore accountStore,
+                            ForkUtils forkUtils,
+                            AccountCapsule origin,
+                            AccountCapsule caller,
+                            long payments,
+                            /*long originEnergyLimit,*/
+                            EnergyProcessor energyProcessor,
+                            long now) throws BalanceInsufficientException {
     if (receipt.getEnergyUsageTotal() <= 0) {
       return;
     }
 
-    if (Objects.isNull(origin) && dynamicPropertiesStore.getAllowTvmConstantinople() == 1) {
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller,
-          receipt.getEnergyUsageTotal(), energyProcessor, now);
+    // AllowTvmConstantinople == 1
+    /*if (Objects.isNull(origin) && dynamicPropertiesStore.getAllowTvmConstantinople() == 1) {
+      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, receipt.getEnergyUsageTotal(), energyProcessor, now);
       return;
-    }
+    }*/
 
+    // 创建合约 或 调用合约时不支持委托支付
     if (caller.getAddress().equals(origin.getAddress())) {
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller,
-          receipt.getEnergyUsageTotal(), energyProcessor, now);
+      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, receipt.getEnergyUsageTotal(), energyProcessor, now);
     } else {
-      long originUsage = Math.multiplyExact(receipt.getEnergyUsageTotal(), percent) / 100;
-      originUsage = getOriginUsage(dynamicPropertiesStore, origin, originEnergyLimit,
-          energyProcessor,
-          originUsage);
-
+      /*long originUsage = Math.multiplyExact(receipt.getEnergyUsageTotal(), percent) / 100;
+      originUsage = getOriginUsage(dynamicPropertiesStore, origin, originEnergyLimit, energyProcessor, originUsage);
       long callerUsage = receipt.getEnergyUsageTotal() - originUsage;
       energyProcessor.useEnergy(origin, originUsage, now);
       this.setOriginEnergyUsage(originUsage);
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils,
-          caller, callerUsage, energyProcessor, now);
+      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, callerUsage, energyProcessor, now);*/
+
+      // 调用合约支持委托支付
+      long callerUsage = receipt.getEnergyUsageTotal();
+      long originEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(origin);
+      // 大于或等于被委托者愿意支付的数量payments
+      if (originEnergyLeft - payments >= 0){
+        payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, origin, callerUsage, energyProcessor, now);
+      } else {
+        // 被委托者支付的数量即为当前余额值
+        long mandatorPayments = originEnergyLeft;
+        // 调用者需要自己支付的数量即为callerUsage - originEnergyLeft
+        long callerPayments = callerUsage - mandatorPayments;
+        long callerEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(caller);
+        if (mandatorPayments >= 0 && callerEnergyLeft - callerPayments >= 0) {
+          //被委托者支付
+          payEnergyBill(dynamicPropertiesStore,
+                  accountStore,
+                  forkUtils,
+                  origin,
+                  mandatorPayments,
+                  energyProcessor,
+                  now);
+          //调用者支付
+          payEnergyBill(dynamicPropertiesStore,
+                  accountStore,
+                  forkUtils,
+                  caller,
+                  callerPayments,
+                  energyProcessor,
+                  now);
+        } else {
+          throw new BalanceInsufficientException(StringUtil.createReadableString(caller.createDbKey())
+                  + " or " + StringUtil.createReadableString(origin.createDbKey())
+                  + " insufficient balance");
+        }
+      }
     }
   }
 
@@ -155,22 +192,30 @@ public class ReceiptCapsule {
   }
 
   private void payEnergyBill(
-      DynamicPropertiesStore dynamicPropertiesStore, AccountStore accountStore, ForkUtils forkUtils,
+      DynamicPropertiesStore dynamicPropertiesStore,
+      AccountStore accountStore,
+      ForkUtils forkUtils,
       AccountCapsule account,
       long usage,
       EnergyProcessor energyProcessor,
       long now) throws BalanceInsufficientException {
+
     long accountEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(account);
     if (accountEnergyLeft >= usage) {
-      energyProcessor.useEnergy(account, usage, now);
-      this.setEnergyUsage(usage);
+      //energyProcessor.useEnergy(account, usage, now);
+      //this.setEnergyUsage(usage);
+
+      long energyUsage = account.getEnergyUsage();
+      account.setEnergyUsage(energyUsage - usage);
+      accountStore.put(account.getAddress().toByteArray(), account);
     } else {
+      throw new BalanceInsufficientException(StringUtil.createReadableString(account.createDbKey()) + " insufficient balance");
+    }
+    /*else {
       energyProcessor.useEnergy(account, accountEnergyLeft, now);
 
-      if (forkUtils.pass(ForkBlockVersionEnum.VERSION_3_6_5) &&
-          dynamicPropertiesStore.getAllowAdaptiveEnergy() == 1) {
-        long blockEnergyUsage =
-            dynamicPropertiesStore.getBlockEnergyUsage() + (usage - accountEnergyLeft);
+      if (forkUtils.pass(ForkBlockVersionEnum.VERSION_3_6_5) && dynamicPropertiesStore.getAllowAdaptiveEnergy() == 1) {
+        long blockEnergyUsage = dynamicPropertiesStore.getBlockEnergyUsage() + (usage - accountEnergyLeft);
         dynamicPropertiesStore.saveBlockEnergyUsage(blockEnergyUsage);
       }
 
@@ -179,23 +224,20 @@ public class ReceiptCapsule {
       if (dynamicEnergyFee > 0) {
         sunPerEnergy = dynamicEnergyFee;
       }
-      long energyFee =
-          (usage - accountEnergyLeft) * sunPerEnergy;
+      long energyFee = (usage - accountEnergyLeft) * sunPerEnergy;
       this.setEnergyUsage(accountEnergyLeft);
       this.setEnergyFee(energyFee);
       long balance = account.getBalance();
       if (balance < energyFee) {
-        throw new BalanceInsufficientException(
-            StringUtil.createReadableString(account.createDbKey()) + " insufficient balance");
+        throw new BalanceInsufficientException(StringUtil.createReadableString(account.createDbKey()) + " insufficient balance");
       }
       account.setBalance(balance - energyFee);
 
       //send to blackHole
-      Commons.adjustBalance(accountStore, accountStore.getBlackhole().getAddress().toByteArray(),
-          energyFee);
-    }
+      Commons.adjustBalance(accountStore, accountStore.getBlackhole().getAddress().toByteArray(), energyFee);
+    }*/
 
-    accountStore.put(account.getAddress().toByteArray(), account);
+    //accountStore.put(account.getAddress().toByteArray(), account);
   }
 
   public contractResult getResult() {

@@ -19,6 +19,7 @@ package org.tron.core.vm.config;
 
 import static org.tron.common.utils.DBConfig.ENERGY_LIMIT_HARD_FORK;
 
+import com.sun.org.apache.xerces.internal.dom.PSVIAttrNSImpl;
 import lombok.Setter;
 
 /**
@@ -46,6 +47,12 @@ public class VMConfig {
 
   @Setter
   private static boolean ALLOW_TVM_SOLIDITY_059 = false;
+
+  @Setter
+  private static int CREATE_CONTRACT_FEE = 0;
+
+  @Setter
+  private static int CALL_CONTRACT_FEE = 0;
 
 
   private VMConfig() {
@@ -83,6 +90,14 @@ public class VMConfig {
     ALLOW_TVM_SOLIDITY_059 = allow == 1;
   }
 
+  public static void initCreateContractFee(int fee) {
+    CREATE_CONTRACT_FEE = fee;
+  }
+
+  public static void initCallContractFee(int fee) {
+    CALL_CONTRACT_FEE = fee;
+  }
+
   public static boolean getEnergyLimitHardFork() {
     return ENERGY_LIMIT_HARD_FORK;
   }
@@ -103,8 +118,15 @@ public class VMConfig {
     return ALLOW_TVM_SOLIDITY_059;
   }
 
-  private static class SystemPropertiesInstance {
+  public static int getCreateContractFee() {
+    return CREATE_CONTRACT_FEE;
+  }
 
+  public static int getCallContractFee() {
+    return CALL_CONTRACT_FEE;
+  }
+
+  private static class SystemPropertiesInstance {
     private static final VMConfig INSTANCE = new VMConfig();
   }
 

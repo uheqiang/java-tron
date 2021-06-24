@@ -5,6 +5,8 @@ import static org.tron.common.runtime.InternalTransaction.TrxType.TRX_CONTRACT_C
 import static org.tron.common.utils.DecodeUtil.addressPreFixByte;
 
 import java.util.Objects;
+
+import com.google.protobuf.ByteString;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -163,18 +165,16 @@ public class TransactionTrace {
     receipt.addNetFee(netFee);
   }
 
-  public void exec()
-      throws ContractExeException, ContractValidateException, VMIllegalException {
+  public void exec() throws ContractExeException, ContractValidateException, VMIllegalException {
     /*  VM execute  */
     runtime.execute(transactionContext);
+    //todo 在这里可以设置固定手续费额度
     setBill(transactionContext.getProgramResult().getEnergyUsed());
 
     if (TrxType.TRX_PRECOMPILED_TYPE != trxType) {
-      if (contractResult.OUT_OF_TIME
-          .equals(receipt.getResult())) {
+      if (contractResult.OUT_OF_TIME.equals(receipt.getResult())) {
         setTimeResultType(TimeResultType.OUT_OF_TIME);
-      } else if (System.currentTimeMillis() - txStartTimeInMs
-          > DBConfig.getLongRunningTime()) {
+      } else if (System.currentTimeMillis() - txStartTimeInMs > DBConfig.getLongRunningTime()) {
         setTimeResultType(TimeResultType.LONG_RUNNING);
       }
     }
@@ -194,10 +194,10 @@ public class TransactionTrace {
   }
 
   /**
-   * pay actually bill(include ENERGY and storage).
+   * 支持委托支付ENERGY
    */
-  public void pay() throws BalanceInsufficientException {
-    byte[] originAccount;
+  public void paySupportDelegation() throws BalanceInsufficientException {
+    /*byte[] originAccount;
     byte[] callerAccount;
     long percent = 0;
     long originEnergyLimit = 0;
@@ -207,15 +207,11 @@ public class TransactionTrace {
         originAccount = callerAccount;
         break;
       case TRX_CONTRACT_CALL_TYPE:
-        TriggerSmartContract callContract = ContractCapsule
-            .getTriggerContractFromTransaction(trx.getInstance());
-        ContractCapsule contractCapsule =
-            contractStore.get(callContract.getContractAddress().toByteArray());
-
+        TriggerSmartContract callContract = ContractCapsule.getTriggerContractFromTransaction(trx.getInstance());
+        ContractCapsule contractCapsule = contractStore.get(callContract.getContractAddress().toByteArray());
         callerAccount = callContract.getOwnerAddress().toByteArray();
         originAccount = contractCapsule.getOriginAddress();
-        percent = Math
-            .max(Constant.ONE_HUNDRED - contractCapsule.getConsumeUserResourcePercent(), 0);
+        percent = Math.max(Constant.ONE_HUNDRED - contractCapsule.getConsumeUserResourcePercent(), 0);
         percent = Math.min(percent, Constant.ONE_HUNDRED);
         originEnergyLimit = contractCapsule.getOriginEnergyLimit();
         break;
@@ -227,12 +223,71 @@ public class TransactionTrace {
     AccountCapsule origin = accountStore.get(originAccount);
     AccountCapsule caller = accountStore.get(callerAccount);
     receipt.payEnergyBill(
-        dynamicPropertiesStore, accountStore, forkUtils,
-        origin,
-        caller,
-        percent, originEnergyLimit,
-        energyProcessor,
-        EnergyProcessor.getHeadSlot(dynamicPropertiesStore));
+            dynamicPropertiesStore, accountStore, forkUtils,
+            origin,
+            caller,
+            percent, originEnergyLimit,
+            energyProcessor,
+            EnergyProcessor.getHeadSlot(dynamicPropertiesStore));*/
+  }
+
+  /**
+   * pay actually bill(include ENERGY and storage).
+   */
+  public void pay() throws BalanceInsufficientException {
+    byte[] originAccount;
+    byte[] callerAccount;
+    long percent = 0;
+    long originEnergyLimit = 0;
+    long payments = 0;
+    switch (trxType) {
+      //创建合约，没有委托支付机制，完全由合约创建者支付手续费
+      case TRX_CONTRACT_CREATION_TYPE:
+        callerAccount = TransactionCapsule.getOwner(trx.getInstance().getRawData().getContract(0));
+        originAccount = callerAccount;
+        break;
+      //调用合约，可以设置委托支付机制
+      case TRX_CONTRACT_CALL_TYPE:
+        TriggerSmartContract callContract = ContractCapsule.getTriggerContractFromTransaction(trx.getInstance());
+        ContractCapsule contractCapsule = contractStore.get(callContract.getContractAddress().toByteArray());
+        //调用合约者
+        callerAccount = callContract.getOwnerAddress().toByteArray();
+        //合约拥有者
+        originAccount = contractCapsule.getOriginAddress();
+        percent = Math.max(Constant.ONE_HUNDRED - contractCapsule.getConsumeUserResourcePercent(), 0);
+        percent = Math.min(percent, Constant.ONE_HUNDRED);
+        originEnergyLimit = contractCapsule.getOriginEnergyLimit();
+
+        /*byte[] hReturn = transactionContext.getProgramResult().getHReturn();
+        //由合约执行的结果来确定是否需要委托支付，默认为false
+        //参数1：boolean、是否运行委托支付
+        //参数2：address、委托支付地址
+        //参数3：payments、委托者愿意支付的额度*/
+        byte[] hReturn = transactionContext.getProgramResult().getHReturn();
+        ByteString bytes = ByteString.copyFrom(hReturn);
+        payments = 0;
+        boolean isDelegationPay = false;
+        if (!isDelegationPay) {
+          originAccount = callerAccount;
+        }
+        break;
+      default:
+        return;
+    }
+
+    // originAccount Percent = 30%
+    AccountCapsule origin = accountStore.get(originAccount);
+    AccountCapsule caller = accountStore.get(callerAccount);
+    receipt.payEnergyBill(
+            dynamicPropertiesStore,
+            accountStore,
+            forkUtils,
+            origin,
+            caller,
+            payments,
+            /*originEnergyLimit,*/
+            energyProcessor,
+            EnergyProcessor.getHeadSlot(dynamicPropertiesStore));
   }
 
   public boolean checkNeedRetry() {
