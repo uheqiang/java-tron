@@ -145,38 +145,57 @@ public class ReceiptCapsule {
       // 调用合约支持委托支付
       long callerUsage = receipt.getEnergyUsageTotal();
       long originEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(origin);
-      // 大于或等于被委托者愿意支付的数量payments
-      if (originEnergyLeft - payments >= 0){
-        payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, origin, callerUsage, energyProcessor, now);
-      } else {
-        // 被委托者支付的数量即为当前余额值
-        long mandatorPayments = originEnergyLeft;
-        // 调用者需要自己支付的数量即为callerUsage - originEnergyLeft
-        long callerPayments = callerUsage - mandatorPayments;
-        long callerEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(caller);
-        if (mandatorPayments >= 0 && callerEnergyLeft - callerPayments >= 0) {
-          //被委托者支付
-          payEnergyBill(dynamicPropertiesStore,
-                  accountStore,
-                  forkUtils,
-                  origin,
-                  mandatorPayments,
-                  energyProcessor,
-                  now);
-          //调用者支付
-          payEnergyBill(dynamicPropertiesStore,
-                  accountStore,
-                  forkUtils,
-                  caller,
-                  callerPayments,
-                  energyProcessor,
-                  now);
-        } else {
-          throw new BalanceInsufficientException(StringUtil.createReadableString(caller.createDbKey())
-                  + " or " + StringUtil.createReadableString(origin.createDbKey())
-                  + " insufficient balance");
-        }
+      // 调用者支付
+      if (payments <= 0 || originEnergyLeft <= 0) {
+        payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, callerUsage, energyProcessor, now);
+        return;
       }
+
+      // 被委托者支付的数量即为当前余额值
+      long mandatorPayments = 0;
+      // 调用者需要自己支付的数量
+      long callerPayments = 0;
+      if (originEnergyLeft - payments >= 0) {
+        // 被委托者支付
+        if (callerUsage <= payments) {
+          payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, origin, callerUsage, energyProcessor, now);
+          return;
+        } else {
+          // 联合支付
+          mandatorPayments = payments;
+          callerPayments = callerUsage - payments;
+        }
+      } else {
+        // 联合支付
+        // 被委托者账户余额不足，不能支付设置的额度，只能支付部分费用
+        // 被委托者支付的数量即为当前余额值
+        mandatorPayments = originEnergyLeft;
+        // 调用者需要自己支付的数量即为callerUsage - originEnergyLeft
+        callerPayments = callerUsage - mandatorPayments;
+      }
+      // 联合支付
+      long callerEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(caller);
+      if (mandatorPayments > 0 && callerEnergyLeft - callerPayments >= 0) {
+        //被委托者支付
+        payEnergyBill(dynamicPropertiesStore,
+                accountStore,
+                forkUtils,
+                origin,
+                mandatorPayments,
+                energyProcessor,
+                now);
+        //调用者支付
+        payEnergyBill(dynamicPropertiesStore,
+                accountStore,
+                forkUtils,
+                caller,
+                callerPayments,
+                energyProcessor,
+                now);
+      }
+      throw new BalanceInsufficientException(StringUtil.createReadableString(caller.createDbKey())
+              + " or " + StringUtil.createReadableString(origin.createDbKey())
+              + " insufficient balance");
     }
   }
 

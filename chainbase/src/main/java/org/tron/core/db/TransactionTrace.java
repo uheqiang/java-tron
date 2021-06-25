@@ -237,8 +237,8 @@ public class TransactionTrace {
   public void pay() throws BalanceInsufficientException {
     byte[] originAccount;
     byte[] callerAccount;
-    long percent = 0;
-    long originEnergyLimit = 0;
+    /*long percent = 0;
+    long originEnergyLimit = 0;*/
     long payments = 0;
     switch (trxType) {
       //创建合约，没有委托支付机制，完全由合约创建者支付手续费
@@ -254,9 +254,9 @@ public class TransactionTrace {
         callerAccount = callContract.getOwnerAddress().toByteArray();
         //合约拥有者
         originAccount = contractCapsule.getOriginAddress();
-        percent = Math.max(Constant.ONE_HUNDRED - contractCapsule.getConsumeUserResourcePercent(), 0);
+        /*percent = Math.max(Constant.ONE_HUNDRED - contractCapsule.getConsumeUserResourcePercent(), 0);
         percent = Math.min(percent, Constant.ONE_HUNDRED);
-        originEnergyLimit = contractCapsule.getOriginEnergyLimit();
+        originEnergyLimit = contractCapsule.getOriginEnergyLimit();*/
 
         /*byte[] hReturn = transactionContext.getProgramResult().getHReturn();
         //由合约执行的结果来确定是否需要委托支付，默认为false
