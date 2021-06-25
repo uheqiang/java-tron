@@ -260,9 +260,8 @@ public class TransactionTrace {
 
         /*byte[] hReturn = transactionContext.getProgramResult().getHReturn();
         //由合约执行的结果来确定是否需要委托支付，默认为false
-        //参数1：boolean、是否运行委托支付
-        //参数2：address、委托支付地址
-        //参数3：payments、委托者愿意支付的额度*/
+        //参数1：boolean、是否运行委托支付isDelegationPay
+        //参数2：payments、委托者愿意支付的额度*/
         byte[] hReturn = transactionContext.getProgramResult().getHReturn();
         ByteString bytes = ByteString.copyFrom(hReturn);
         payments = 0;

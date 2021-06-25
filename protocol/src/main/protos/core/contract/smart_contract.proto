@@ -43,6 +43,17 @@ message SmartContract {
         }
         repeated Entry entrys = 1;
     }
+    message DelegationPay {
+        // 该合约是否支持代理付费
+        bool support = 1;
+        // 赞助者，暂时只支持合约拥有者
+        bytes sponsor = 2;
+        // 赞助费用总额
+        int64 sponsorbalance = 3;
+        // 单笔交易资助金额上限
+        int64 sponsorlimitpertransaction = 4;
+    }
+
     bytes origin_address = 1;
     bytes contract_address = 2;
     ABI abi = 3;
@@ -53,6 +64,7 @@ message SmartContract {
     int64 origin_energy_limit = 8;
     bytes code_hash = 9;
     bytes trx_hash = 10;
+    DelegationPay delegation_pay = 11;
 }
 
 message CreateSmartContract {

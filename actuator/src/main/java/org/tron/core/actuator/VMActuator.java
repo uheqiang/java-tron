@@ -321,8 +321,7 @@ public class VMActuator implements Actuator2 {
               .encode58Check(contractAddress));
     }
 
-    newSmartContract = newSmartContract.toBuilder()
-        .setContractAddress(ByteString.copyFrom(contractAddress)).build();
+    newSmartContract = newSmartContract.toBuilder().setContractAddress(ByteString.copyFrom(contractAddress)).build();
     long callValue = newSmartContract.getCallValue();
     long tokenValue = 0;
     long tokenId = 0;
@@ -339,8 +338,7 @@ public class VMActuator implements Actuator2 {
         throw new ContractValidateException(
             "feeLimit must be >= 0 and <= " + VMConfig.MAX_FEE_LIMIT);
       }
-      AccountCapsule creator = this.repository
-          .getAccount(newSmartContract.getOriginAddress().toByteArray());
+      AccountCapsule creator = this.repository.getAccount(newSmartContract.getOriginAddress().toByteArray());
 
       long energyLimit;
       // according to version
@@ -389,8 +387,7 @@ public class VMActuator implements Actuator2 {
     }
     program.getResult().setContractAddress(contractAddress);
 
-    repository.createAccount(contractAddress, newSmartContract.getName(),
-        Protocol.AccountType.Contract);
+    repository.createAccount(contractAddress, newSmartContract.getName(), Protocol.AccountType.Contract);
 
     repository.createContract(contractAddress, new ContractCapsule(newSmartContract));
     byte[] code = newSmartContract.getBytecode().toByteArray();
