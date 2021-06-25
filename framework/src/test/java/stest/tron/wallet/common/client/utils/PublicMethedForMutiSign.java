@@ -839,10 +839,10 @@ public class PublicMethedForMutiSign {
     UpdateAssetContract.Builder builder =
         UpdateAssetContract.newBuilder();
     ByteString basAddreess = ByteString.copyFrom(address);
-    builder.setDescription(ByteString.copyFrom(description));
+    /*builder.setDescription(ByteString.copyFrom(description));
     builder.setUrl(ByteString.copyFrom(url));
     builder.setNewLimit(newLimit);
-    builder.setNewPublicLimit(newPublicLimit);
+    builder.setNewPublicLimit(newPublicLimit);*/
     builder.setOwnerAddress(basAddreess);
 
     UpdateAssetContract contract
@@ -876,10 +876,10 @@ public class PublicMethedForMutiSign {
     UpdateAssetContract.Builder builder =
         UpdateAssetContract.newBuilder();
     ByteString basAddreess = ByteString.copyFrom(address);
-    builder.setDescription(ByteString.copyFrom(description));
+    /*builder.setDescription(ByteString.copyFrom(description));
     builder.setUrl(ByteString.copyFrom(url));
     builder.setNewLimit(newLimit);
-    builder.setNewPublicLimit(newPublicLimit);
+    builder.setNewPublicLimit(newPublicLimit);*/
     builder.setOwnerAddress(basAddreess);
 
     UpdateAssetContract contract
@@ -919,10 +919,10 @@ public class PublicMethedForMutiSign {
     UpdateAssetContract.Builder builder =
         UpdateAssetContract.newBuilder();
     ByteString basAddreess = ByteString.copyFrom(address);
-    builder.setDescription(ByteString.copyFrom(description));
+    /*builder.setDescription(ByteString.copyFrom(description));
     builder.setUrl(ByteString.copyFrom(url));
     builder.setNewLimit(newLimit);
-    builder.setNewPublicLimit(newPublicLimit);
+    builder.setNewPublicLimit(newPublicLimit);*/
     builder.setOwnerAddress(basAddreess);
 
     UpdateAssetContract contract

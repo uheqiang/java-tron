@@ -106,10 +106,10 @@ public class UpdateAssetActuatorTest {
     return Any.pack(
         UpdateAssetContract.newBuilder()
             .setOwnerAddress(StringUtil.hexString2ByteString(accountAddress))
-            .setDescription(ByteString.copyFromUtf8(description))
-            .setUrl(ByteString.copyFromUtf8(url))
-            .setNewLimit(newLimit)
-            .setNewPublicLimit(newPublicLimit)
+//            .setDescription(ByteString.copyFromUtf8(description))
+//            .setUrl(ByteString.copyFromUtf8(url))
+//            .setNewLimit(newLimit)
+//            .setNewPublicLimit(newPublicLimit)
             .build());
   }
 

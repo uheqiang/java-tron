@@ -34,18 +34,11 @@ public class ContractCapsule implements ProtoCapsule<SmartContract> {
 
   private SmartContract smartContract;
 
-  private boolean isDelegationPay;
-
   /**
    * constructor TransactionCapsule.
    */
   public ContractCapsule(SmartContract smartContract) {
     this.smartContract = smartContract;
-  }
-
-  public ContractCapsule(SmartContract smartContract, boolean isDelegationPay) {
-    this.smartContract = smartContract;
-    this.isDelegationPay = isDelegationPay;
   }
 
   public ContractCapsule(byte[] data) {

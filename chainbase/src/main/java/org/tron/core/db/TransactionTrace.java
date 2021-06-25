@@ -40,6 +40,7 @@ import org.tron.core.store.StoreFactory;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.Transaction.Result.contractResult;
+import org.tron.protos.contract.SmartContractOuterClass.SmartContract.DelegationPay;
 import org.tron.protos.contract.SmartContractOuterClass.SmartContract.ABI;
 import org.tron.protos.contract.SmartContractOuterClass.TriggerSmartContract;
 
@@ -258,15 +259,12 @@ public class TransactionTrace {
         percent = Math.min(percent, Constant.ONE_HUNDRED);
         originEnergyLimit = contractCapsule.getOriginEnergyLimit();*/
 
-        /*byte[] hReturn = transactionContext.getProgramResult().getHReturn();
-        //由合约执行的结果来确定是否需要委托支付，默认为false
+        /*//由合约执行的结果来确定是否需要委托支付，默认为false
         //参数1：boolean、是否运行委托支付isDelegationPay
         //参数2：payments、委托者愿意支付的额度*/
-        byte[] hReturn = transactionContext.getProgramResult().getHReturn();
-        ByteString bytes = ByteString.copyFrom(hReturn);
-        payments = 0;
-        boolean isDelegationPay = false;
-        if (!isDelegationPay) {
+        DelegationPay delegationPay = contractCapsule.getInstance().getDelegationPay();
+        payments = delegationPay.getSponsorlimitpertransaction();
+        if (!delegationPay.getSupport()) {
           originAccount = callerAccount;
         }
         break;
