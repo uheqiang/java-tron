@@ -14,7 +14,7 @@ import org.tron.core.store.DynamicPropertiesStore;
 import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.contract.AccountContract;
-import org.tron.protos.contract.BusinessContract;
+import org.tron.protos.contract.BusinessContract.BusinessCreateContract;
 
 import java.util.Objects;
 
@@ -26,7 +26,7 @@ import java.util.Objects;
 public class BusinessRegistrationActuator extends AbstractActuator {
 
     public BusinessRegistrationActuator() {
-        super(ContractType.BusinessCreateContract, BusinessContract.BusinessCreateContract.class);
+        super(ContractType.BusinessCreateContract, BusinessCreateContract.class);
     }
 
     @Override
@@ -36,12 +36,12 @@ public class BusinessRegistrationActuator extends AbstractActuator {
             throw new RuntimeException("TransactionResultCapsule is null");
         }
 
-        long fee = calcFee(); //default 0
+        long fee = 0;
         DynamicPropertiesStore dynamicStore = chainBaseManager.getDynamicPropertiesStore();
         AccountStore accountStore = chainBaseManager.getAccountStore();
         try {
             long timestamp = dynamicStore.getLatestBlockHeaderTimestamp();
-            BusinessContract.BusinessCreateContract businessCreateContract = any.unpack(BusinessContract.BusinessCreateContract.class);
+            BusinessCreateContract businessCreateContract = any.unpack(BusinessCreateContract.class);
             Protocol.PersonalInfo personalInfo = businessCreateContract.getPersonalInfo();
 
             AccountCapsule accountCapsule = new AccountCapsule(businessCreateContract.getAccountAddress(),
@@ -73,9 +73,9 @@ public class BusinessRegistrationActuator extends AbstractActuator {
             throw new ContractValidateException(
                     "contract type error,expected type [AccountCreateContract],real type[" + any.getClass() + "]");
         }
-        final BusinessContract.BusinessCreateContract contract;
+        final BusinessCreateContract contract;
         try {
-            contract = this.any.unpack(BusinessContract.BusinessCreateContract.class);
+            contract = this.any.unpack(BusinessCreateContract.class);
         } catch (InvalidProtocolBufferException e) {
             logger.debug(e.getMessage(), e);
             throw new ContractValidateException(e.getMessage());

@@ -1070,7 +1070,7 @@ public class Args {
             .getInt(Constant.NODE_SHIELDED_TRANS_IN_PENDING_MAX_COUNTS) : 10;
 
     if (INSTANCE.isWitness()) {
-      INSTANCE.fullNodeAllowShieldedTransactionArgs = true;
+      INSTANCE.fullNodeAllowShieldedTransactionArgs = false;
     }
 
     INSTANCE.rateLimiterInitialization =

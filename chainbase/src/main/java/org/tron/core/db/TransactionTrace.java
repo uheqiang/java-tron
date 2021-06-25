@@ -259,9 +259,6 @@ public class TransactionTrace {
         percent = Math.min(percent, Constant.ONE_HUNDRED);
         originEnergyLimit = contractCapsule.getOriginEnergyLimit();*/
 
-        /*//由合约执行的结果来确定是否需要委托支付，默认为false
-        //参数1：boolean、是否运行委托支付isDelegationPay
-        //参数2：payments、委托者愿意支付的额度*/
         DelegationPay delegationPay = contractCapsule.getInstance().getDelegationPay();
         payments = delegationPay.getSponsorlimitpertransaction();
         if (!delegationPay.getSupport()) {

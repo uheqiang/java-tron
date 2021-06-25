@@ -167,15 +167,15 @@ public class AssetIssueActuator extends AbstractActuator {
       }
     }
 
-    int precision = assetIssueContract.getPrecision();
+    /*int precision = assetIssueContract.getPrecision();
     if (precision != 0 && dynamicStore.getAllowSameTokenName() != 0) {
-      /*if (precision < 0 || precision > 6) {
+      if (precision < 0 || precision > 6) {
         throw new ContractValidateException("precision cannot exceed 6");
-      }*/
+      }
       if (precision != 1) {
         throw new ContractValidateException("precision should be 1");
       }
-    }
+    }*/
 
     //abr是token的简称
     if ((!assetIssueContract.getAbbr().isEmpty()) && !TransactionUtil
@@ -206,8 +206,7 @@ public class AssetIssueActuator extends AbstractActuator {
     }*/
 
     if (dynamicStore.getAllowSameTokenName() == 0
-        && assetIssueStore.get(assetIssueContract.getName().toByteArray())
-        != null) {
+        && assetIssueStore.get(assetIssueContract.getName().toByteArray()) != null) {
       throw new ContractValidateException("Token exists");
     }
 

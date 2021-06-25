@@ -94,7 +94,7 @@ public class VM {
   }
 
   public void step(Program program) {
-    if (config.vmTrace()) {
+    if (VMConfig.vmTrace()) {
       program.saveOpTrace();
     }
 

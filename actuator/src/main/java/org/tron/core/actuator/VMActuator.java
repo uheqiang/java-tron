@@ -500,11 +500,6 @@ public class VMActuator implements Actuator2 {
       }
     }
 
-
-    /*if (VMConfig.allowEntrustedPayment()) {
-
-    }*/
-
   }
 
   public long getAccountEnergyLimitWithFixRatio(AccountCapsule account, long feeLimit, long callValue) {
