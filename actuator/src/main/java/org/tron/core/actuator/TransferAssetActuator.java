@@ -148,11 +148,6 @@ public class TransferAssetActuator extends AbstractActuator {
       throw new ContractValidateException("No owner account!");
     }
 
-    /*AccountCapsule toAccount = accountStore.get(toAddress);
-    if (toAccount == null) {
-      throw new ContractValidateException("No receive Account!");
-    }*/
-
     if (!Commons.getAssetIssueStoreFinal(dynamicStore, assetIssueStore, assetIssueV2Store).has(assetName)) {
       throw new ContractValidateException("No asset!");
     }

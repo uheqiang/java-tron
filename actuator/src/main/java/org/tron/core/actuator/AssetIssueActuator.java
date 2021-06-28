@@ -160,13 +160,6 @@ public class AssetIssueActuator extends AbstractActuator {
       throw new ContractValidateException("Invalid assetName");
     }
 
-    if (dynamicStore.getAllowSameTokenName() != 0) {
-      String name = assetIssueContract.getName().toStringUtf8().toLowerCase();
-      if (name.equals("trx")) {
-        throw new ContractValidateException("assetName can't be trx");
-      }
-    }
-
     /*int precision = assetIssueContract.getPrecision();
     if (precision != 0 && dynamicStore.getAllowSameTokenName() != 0) {
       if (precision < 0 || precision > 6) {
