@@ -476,8 +476,7 @@ public class Wallet {
       Message message = new TransactionMessage(signaturedTransaction.toByteArray());
       if (minEffectiveConnection != 0) {
         if (tronNetDelegate.getActivePeer().isEmpty()) {
-          logger
-              .warn("Broadcast transaction {} has failed, no connection.", trx.getTransactionId());
+          logger.warn("Broadcast transaction {} has failed, no connection.", trx.getTransactionId());
           return builder.setResult(false).setCode(response_code.NO_CONNECTION)
               .setMessage(ByteString.copyFromUtf8("no connection"))
               .build();
@@ -498,8 +497,7 @@ public class Wallet {
       }
 
       if (dbManager.isTooManyPending()) {
-        logger
-            .warn("Broadcast transaction {} has failed, too many pending.", trx.getTransactionId());
+        logger.warn("Broadcast transaction {} has failed, too many pending.", trx.getTransactionId());
         return builder.setResult(false).setCode(response_code.SERVER_BUSY).build();
       }
 

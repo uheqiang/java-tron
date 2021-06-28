@@ -113,6 +113,7 @@ import org.tron.protos.contract.AccountContract.AccountCreateContract;
 import org.tron.protos.contract.AccountContract.AccountPermissionUpdateContract;
 import org.tron.protos.contract.AccountContract.AccountUpdateContract;
 import org.tron.protos.contract.AccountContract.SetAccountIdContract;
+import org.tron.protos.contract.BusinessContract.BusinessCreateContract;
 import org.tron.protos.contract.AssetIssueContractOuterClass.AssetIssueContract;
 import org.tron.protos.contract.AssetIssueContractOuterClass.ParticipateAssetIssueContract;
 import org.tron.protos.contract.AssetIssueContractOuterClass.TransferAssetContract;
@@ -1191,6 +1192,12 @@ public class RpcApiService implements Service {
     }
 
     @Override
+    public void createBusiness2(BusinessCreateContract request,
+                                StreamObserver<TransactionExtention> responseObserver) {
+      createTransactionExtention(request, ContractType.BusinessCreateContract, responseObserver);
+    }
+
+    @Override
     public void updateWitness(WitnessUpdateContract request,
         StreamObserver<Transaction> responseObserver) {
       try {
@@ -1695,6 +1702,7 @@ public class RpcApiService implements Service {
       createTransactionExtention(request, ContractType.CreateSmartContract, responseObserver);
     }
 
+    @Override
     public void totalTransaction(EmptyMessage request,
         StreamObserver<NumberMessage> responseObserver) {
       responseObserver.onNext(wallet.totalTransaction());
@@ -1767,6 +1775,7 @@ public class RpcApiService implements Service {
       }
     }
 
+    @Override
     public void getPaginatedAssetIssueList(PaginatedMessage request,
         StreamObserver<AssetIssueList> responseObserver) {
       responseObserver.onNext(wallet.getAssetIssueList(request.getOffset(), request.getLimit()));
@@ -1781,6 +1790,7 @@ public class RpcApiService implements Service {
       responseObserver.onCompleted();
     }
 
+    @Override
     public void listWitnesses(EmptyMessage request,
         StreamObserver<WitnessList> responseObserver) {
       responseObserver.onNext(wallet.getWitnessList());
@@ -1803,6 +1813,7 @@ public class RpcApiService implements Service {
       responseObserver.onCompleted();
     }
 
+    @Override
     public void getDelegatedResourceAccountIndex(BytesMessage request,
         StreamObserver<org.tron.protos.Protocol.DelegatedResourceAccountIndex> responseObserver) {
       responseObserver

@@ -69,7 +69,7 @@ public class BusinessRegistrationActuator extends AbstractActuator {
             throw new ContractValidateException("No account store or contract store!");
         }
         AccountStore accountStore = chainBaseManager.getAccountStore();
-        if (!any.is(AccountContract.AccountCreateContract.class)) {
+        if (!any.is(BusinessCreateContract.class)) {
             throw new ContractValidateException(
                     "contract type error,expected type [AccountCreateContract],real type[" + any.getClass() + "]");
         }

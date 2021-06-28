@@ -308,8 +308,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
         }
         // todo add other contract
         default: {
-          Class<? extends GeneratedMessageV3> clazz = TransactionFactory
-              .getContract(contract.getType());
+          Class<? extends GeneratedMessageV3> clazz = TransactionFactory.getContract(contract.getType());
           if (clazz == null) {
             logger.error("not exist {}", contract.getType());
             return null;
@@ -473,6 +472,7 @@ public class TransactionCapsule implements ProtoCapsule<Transaction> {
             .createDefaultActivePermission(ByteString.copyFrom(owner), dynamicPropertiesStore);
       }
     } else {
+      //permissionId == 0
       permission = account.getPermissionById(permissionId);
     }
     if (permission == null) {

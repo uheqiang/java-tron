@@ -1284,7 +1284,7 @@ public class Manager {
         new RuntimeImpl(this));
     trxCap.setTrxTrace(trace);
 
-    consumeBandwidth(trxCap, trace);
+//    consumeBandwidth(trxCap, trace);
     consumeMultiSignFee(trxCap, trace);
 
 
