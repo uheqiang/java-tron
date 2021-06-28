@@ -56,7 +56,7 @@ public class CreateAccountActuator extends AbstractActuator {
         PersonalInfo personalInfo = accountCreateContract.getPersonalInfo();
         AppAccountIndexCapsule appAccountIndexCapsule =  new AppAccountIndexCapsule(
                 personalInfo,  accountCreateContract.getAccountAddress(), timestamp);
-        byte[] key = personalInfo.getIdentity().concat(personalInfo.getAppID()).trim().getBytes();
+        byte[] key = personalInfo.getAppID().concat(personalInfo.getIdentity()).trim().getBytes();
         appAccountIndexStore.put(key, appAccountIndexCapsule);
       }
 
@@ -109,9 +109,10 @@ public class CreateAccountActuator extends AbstractActuator {
       throw new ContractValidateException("Invalid account address");
     }
 
-    // 验证用户地址已存在
+    // 验证用户地址是否已被注册
+    String readableAddress;
     if (accountStore.has(accountAddress)) {
-      String readableAddress = StringUtil.createReadableString(accountAddress);
+      readableAddress = StringUtil.createReadableString(accountAddress);
       throw new ContractValidateException("Account[" + readableAddress + "] has existed");
     }
 
@@ -121,9 +122,15 @@ public class CreateAccountActuator extends AbstractActuator {
       PersonalInfo personalInfo = contract.getPersonalInfo();
       // 商家ID
       String appId = personalInfo.getAppID();
+      // 验证商家ID是否注册
+      AccountCapsule business = accountStore.get(appId.trim().getBytes());
+      if (business == null) {
+        throw new ContractValidateException("Business not exists, app[" + appId + "]");
+      }
+
       // 用户身份
       String identity = personalInfo.getIdentity();
-      String key = identity.concat(appId).trim();
+      String key = appId.concat(identity).trim();
       AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();
       AppAccountIndexCapsule appAccountIndexCapsule = appAccountIndexStore.get(key.getBytes());
       if (appAccountIndexCapsule != null) {
