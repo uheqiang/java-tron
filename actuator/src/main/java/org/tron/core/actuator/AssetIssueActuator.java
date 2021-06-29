@@ -104,7 +104,7 @@ public class AssetIssueActuator extends AbstractActuator {
         remainSupply -= next.getFrozenAmount();
       }*/
 
-      //ALLOW_SAME_TOKEN_NAME == 0，表示不运行创建相同名称的Token
+      //ALLOW_SAME_TOKEN_NAME == 0，表示不允许创建相同名称的Token
       if (dynamicStore.getAllowSameTokenName() == 0) {
         accountCapsule.addAsset(assetIssueCapsule.createDbKey(), remainSupply);
       }

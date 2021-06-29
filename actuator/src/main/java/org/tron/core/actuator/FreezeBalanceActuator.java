@@ -4,9 +4,11 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.Commons;
 import org.tron.common.utils.DBConfig;
 import org.tron.common.utils.StringUtil;
@@ -16,10 +18,7 @@ import org.tron.core.capsule.DelegatedResourceCapsule;
 import org.tron.core.capsule.TransactionResultCapsule;
 import org.tron.core.exception.ContractExeException;
 import org.tron.core.exception.ContractValidateException;
-import org.tron.core.store.AccountStore;
-import org.tron.core.store.DelegatedResourceAccountIndexStore;
-import org.tron.core.store.DelegatedResourceStore;
-import org.tron.core.store.DynamicPropertiesStore;
+import org.tron.core.store.*;
 import org.tron.protos.Protocol.AccountType;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.Transaction.Result.code;
@@ -94,6 +93,7 @@ public class FreezeBalanceActuator extends AbstractActuator {
         delegateResource(ownerAddress, receiverAddress, false, frozenBalance, expireTime);
         accountCapsule.addDelegatedFrozenBalanceForEnergy(frozenBalance);
       } else {
+        //trc10与能量之间的兑换汇率：dynamicStore.getFuelExchangeRate()
         long newFrozenBalanceForEnergy = frozenBalance * dynamicStore.getFuelExchangeRate() +
                 accountCapsule.getAccountResource()
                 .getFrozenBalanceForEnergy()
@@ -103,10 +103,10 @@ public class FreezeBalanceActuator extends AbstractActuator {
       //dynamicStore.addTotalEnergyWeight(frozenBalance / 1000_000L);
     }
 
-    //asset name
-    byte[] key = freezeBalanceContract.getAssetName().toByteArray();
+    //asset id
+    byte[] key = freezeBalanceContract.getAssetId().toByteArray();
     accountCapsule.reduceAssetAmountV2(key,freezeBalanceContract.getFrozenBalance(),
-            dynamicStore,chainBaseManager.getAssetIssueStore());
+            dynamicStore,chainBaseManager.getAssetIssueV2Store());
     accountStore.put(accountCapsule.createDbKey(), accountCapsule);
 
     ret.setStatus(fee, code.SUCESS);
@@ -125,6 +125,7 @@ public class FreezeBalanceActuator extends AbstractActuator {
     }
     AccountStore accountStore = chainBaseManager.getAccountStore();
     DynamicPropertiesStore dynamicStore = chainBaseManager.getDynamicPropertiesStore();
+    AssetIssueV2Store assetIssueV2Store = chainBaseManager.getAssetIssueV2Store();
     if (!any.is(FreezeBalanceContract.class)) {
       throw new ContractValidateException(
           "contract type error,expected type [FreezeBalanceContract],real type[" + any.getClass() + "]");
@@ -142,8 +143,8 @@ public class FreezeBalanceActuator extends AbstractActuator {
       throw new ContractValidateException("Invalid address");
     }
 
-    AccountCapsule accountCapsule = accountStore.get(ownerAddress);
-    if (accountCapsule == null) {
+    AccountCapsule ownerAccount = accountStore.get(ownerAddress);
+    if (ownerAccount == null) {
       String readableOwnerAddress = StringUtil.createReadableString(ownerAddress);
       throw new ContractValidateException("Account[" + readableOwnerAddress + "] not exists");
     }
@@ -161,11 +162,35 @@ public class FreezeBalanceActuator extends AbstractActuator {
     if (!(frozenCount == 0 || frozenCount == 1)) {
       throw new ContractValidateException("frozenCount must be 0 or 1");
     }*/
-    //todo 验证账户是否有该资源
-    ByteString assetName = freezeBalanceContract.getAssetName();
-    //todo 验证账户对应资源的余额是否大于兑换的数额，下面的方式是错误的！！！
-    if (frozenBalance > accountCapsule.getBalance()) {
-      throw new ContractValidateException("frozenBalance must be less than accountBalance");
+    // 验证系统是否有该资源
+    byte[] assetId = freezeBalanceContract.getAssetId().toByteArray();
+    if (!assetIssueV2Store.has(assetId)) {
+      throw new ContractValidateException("No asset in this system!");
+    }
+
+
+    // 限制特定的Token才能兑换成能量
+    if (!Arrays.equals(assetId,"1000001".getBytes())) {
+      throw new ContractValidateException("Account has no asset that can be exchanged for energy!");
+    }
+
+    Map<String, Long> asset = ownerAccount.getAssetMapV2();
+    /*if (dynamicStore.getAllowSameTokenName() == 0) {
+      asset = ownerAccount.getAssetMap();
+    } else {
+      asset = ownerAccount.getAssetMapV2();
+    }*/
+    if (asset.isEmpty()) {
+      throw new ContractValidateException("Owner has no asset!");
+    }
+
+    // 验证账户是否有可兑换的资源，以及对应资源的余额是否大于兑换的数额
+    Long assetBalance = asset.get(ByteArray.toStr(assetId));
+    if (null == assetBalance || assetBalance <= 0) {
+      throw new ContractValidateException("Asset balance must be greater than 0.");
+    }
+    if (frozenBalance > assetBalance) {
+      throw new ContractValidateException("Asset balance is not sufficient.");
     }
 
 //    long maxFrozenNumber = dbManager.getDynamicPropertiesStore().getMaxFrozenNumber();
@@ -186,14 +211,10 @@ public class FreezeBalanceActuator extends AbstractActuator {
               + "and more than " + minFrozenTime + " days");
     }*/
 
-    switch (freezeBalanceContract.getResource()) {
-      /*case BANDWIDTH:
-        break;*/
-      case ENERGY:
-        break;
-      default:
-        //throw new ContractValidateException("ResourceCode error,valid ResourceCode[BANDWIDTH、ENERGY]");
-        throw new ContractValidateException("ResourceCode error,valid ResourceCode[ENERGY]");
+    /*case BANDWIDTH: break;*/
+    //throw new ContractValidateException("ResourceCode error,valid ResourceCode[BANDWIDTH、ENERGY]");
+    if (freezeBalanceContract.getResource() != Common.ResourceCode.ENERGY) {
+      throw new ContractValidateException("ResourceCode error,valid ResourceCode[ENERGY]");
     }
 
     byte[] receiverAddress = freezeBalanceContract.getReceiverAddress().toByteArray();

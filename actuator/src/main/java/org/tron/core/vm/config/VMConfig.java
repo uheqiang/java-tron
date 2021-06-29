@@ -19,7 +19,6 @@ package org.tron.core.vm.config;
 
 import static org.tron.common.utils.DBConfig.ENERGY_LIMIT_HARD_FORK;
 
-import com.sun.org.apache.xerces.internal.dom.PSVIAttrNSImpl;
 import lombok.Setter;
 
 /**

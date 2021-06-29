@@ -17,6 +17,7 @@ package org.tron.core.capsule;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.primitives.Bytes;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.List;
@@ -25,6 +26,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.jca.cci.CciOperationNotSupportedException;
 import org.tron.common.utils.ByteArray;
 import org.tron.core.store.AssetIssueStore;
+import org.tron.core.store.AssetIssueV2Store;
 import org.tron.core.store.DynamicPropertiesStore;
 import org.tron.protos.Protocol;
 import org.tron.protos.Protocol.Account;
@@ -527,6 +529,46 @@ public class AccountCapsule implements ProtoCapsule<Account>, Comparable<Account
   }
 
   /**
+   * key is assetId
+   *
+   * reduce asset amount.
+   */
+  public boolean reduceAssetAmountV2(byte[] key, long amount,
+                                     DynamicPropertiesStore dynamicPropertiesStore, AssetIssueV2Store assetIssueV2Store) {
+    //key is token name
+    if (dynamicPropertiesStore.getAllowSameTokenName() == 0) {
+      Map<String, Long> assetMap = this.account.getAssetMap();
+      AssetIssueCapsule assetIssueCapsule = assetIssueV2Store.get(key);
+      String tokenID = ByteArray.toStr(key);
+      String nameKey = ByteArray.toStr(assetIssueCapsule.getName().toByteArray());
+      Long currentAmount = assetMap.get(nameKey);
+      if (amount > 0 && null != currentAmount && amount <= currentAmount) {
+        this.account = this.account.toBuilder()
+                .putAsset(nameKey, Math.subtractExact(currentAmount, amount))
+                .putAssetV2(tokenID, Math.subtractExact(currentAmount, amount))
+                .build();
+        return true;
+      }
+    }
+    //key is token id
+    if (dynamicPropertiesStore.getAllowSameTokenName() == 1) {
+      String tokenID = ByteArray.toStr(key);
+      Map<String, Long> assetMapV2 = this.account.getAssetV2Map();
+      Long currentAmount = assetMapV2.get(tokenID);
+      if (amount > 0 && null != currentAmount && amount <= currentAmount) {
+        this.account = this.account.toBuilder()
+                .putAssetV2(tokenID, Math.subtractExact(currentAmount, amount))
+                .build();
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * key is assetId or assetName
+   *
    * reduce asset amount.
    */
   public boolean reduceAssetAmountV2(byte[] key, long amount,
