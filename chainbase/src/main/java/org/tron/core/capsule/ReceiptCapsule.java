@@ -199,16 +199,16 @@ public class ReceiptCapsule {
     }
   }
 
-  private long getOriginUsage(DynamicPropertiesStore dynamicPropertiesStore, AccountCapsule origin,
-      long originEnergyLimit,
-      EnergyProcessor energyProcessor, long originUsage) {
-
-    if (checkForEnergyLimit(dynamicPropertiesStore)) {
-      return Math.min(originUsage,
-          Math.min(energyProcessor.getAccountLeftEnergyFromFreeze(origin), originEnergyLimit));
-    }
-    return Math.min(originUsage, energyProcessor.getAccountLeftEnergyFromFreeze(origin));
-  }
+//  private long getOriginUsage(DynamicPropertiesStore dynamicPropertiesStore, AccountCapsule origin,
+//      long originEnergyLimit,
+//      EnergyProcessor energyProcessor, long originUsage) {
+//
+//    if (checkForEnergyLimit(dynamicPropertiesStore)) {
+//      return Math.min(originUsage,
+//          Math.min(energyProcessor.getAccountLeftEnergyFromFreeze(origin), originEnergyLimit));
+//    }
+//    return Math.min(originUsage, energyProcessor.getAccountLeftEnergyFromFreeze(origin));
+//  }
 
   private void payEnergyBill(
       DynamicPropertiesStore dynamicPropertiesStore,
@@ -224,8 +224,8 @@ public class ReceiptCapsule {
       //energyProcessor.useEnergy(account, usage, now);
       //this.setEnergyUsage(usage);
 
-      long energyUsage = account.getEnergyUsage();
-      account.setEnergyUsage(energyUsage - usage);
+      long energyLeft = accountEnergyLeft - usage;
+      account.setFrozenForEnergy(energyLeft, now);
       accountStore.put(account.getAddress().toByteArray(), account);
     } else {
       throw new BalanceInsufficientException(StringUtil.createReadableString(account.createDbKey()) + " insufficient balance");

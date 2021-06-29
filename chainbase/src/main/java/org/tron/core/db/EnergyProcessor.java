@@ -143,7 +143,7 @@ public class EnergyProcessor extends ResourceProcessor {
     long newEnergyUsage = increase(energyUsage, 0, latestConsumeTime, now);
 
     return max(energyLimit - newEnergyUsage, 0); // us*/
-    return accountCapsule.getEnergyUsage();
+    return accountCapsule.getEnergyFrozenBalance();
   }
 
   private long getHeadSlot() {
