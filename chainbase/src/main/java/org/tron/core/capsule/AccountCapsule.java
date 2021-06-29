@@ -656,6 +656,42 @@ public class AccountCapsule implements ProtoCapsule<Account>, Comparable<Account
   }
 
   /**
+   * add asset amount.
+   * key is asset id.
+   */
+  public boolean addAssetAmountV2(byte[] key, long amount,
+                                  DynamicPropertiesStore dynamicPropertiesStore, AssetIssueV2Store assetIssueV2Store) {
+    //key is token name
+    if (dynamicPropertiesStore.getAllowSameTokenName() == 0) {
+      Map<String, Long> assetMap = this.account.getAssetMap();
+      AssetIssueCapsule assetIssueCapsule = assetIssueV2Store.get(key);
+      String tokenID = ByteArray.toStr(key);
+      String nameKey = ByteArray.toStr(assetIssueCapsule.getName().toByteArray());
+      Long currentAmount = assetMap.get(nameKey);
+      if (currentAmount == null) {
+        currentAmount = 0L;
+      }
+      this.account = this.account.toBuilder()
+              .putAsset(nameKey, Math.addExact(currentAmount, amount))
+              .putAssetV2(tokenID, Math.addExact(currentAmount, amount))
+              .build();
+    }
+    //key is token id
+    if (dynamicPropertiesStore.getAllowSameTokenName() == 1) {
+      String tokenIDStr = ByteArray.toStr(key);
+      Map<String, Long> assetMapV2 = this.account.getAssetV2Map();
+      Long currentAmount = assetMapV2.get(tokenIDStr);
+      if (currentAmount == null) {
+        currentAmount = 0L;
+      }
+      this.account = this.account.toBuilder()
+              .putAssetV2(tokenIDStr, Math.addExact(currentAmount, amount))
+              .build();
+    }
+    return true;
+  }
+
+  /**
    * add asset.
    * @param key asset name
    * @param value asset value

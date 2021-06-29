@@ -41,14 +41,14 @@ public class UpdateAssetActuator extends AbstractActuator {
     long fee = calcFee();
     AccountStore accountStore = chainBaseManager.getAccountStore();
     DynamicPropertiesStore dynamicStore = chainBaseManager.getDynamicPropertiesStore();
-    AssetIssueStore assetIssueStore = chainBaseManager.getAssetIssueStore();
+    AssetIssueV2Store assetIssueV2Store = chainBaseManager.getAssetIssueV2Store();
     //AssetIssueV2Store assetIssueV2Store = chainBaseManager.getAssetIssueV2Store();
     try {
       final UpdateAssetContract updateAssetContract = this.any.unpack(UpdateAssetContract.class);
       byte[] ownerAddress = updateAssetContract.getOwnerAddress().toByteArray();
       AccountCapsule accountCapsule = accountStore.get(ownerAddress);
       byte[] assetName = updateAssetContract.getAssetName().toByteArray();
-      accountCapsule.addAssetAmountV2(assetName, updateAssetContract.getMintTokens(), dynamicStore, assetIssueStore);
+      accountCapsule.addAssetAmountV2(assetName, updateAssetContract.getMintTokens(), dynamicStore, assetIssueV2Store);
       accountStore.put(ownerAddress, accountCapsule);
 
     /*long newLimit = updateAssetContract.getNewLimit();
