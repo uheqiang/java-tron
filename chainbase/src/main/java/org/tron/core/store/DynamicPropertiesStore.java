@@ -102,6 +102,8 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
   private static final byte[] ALLOW_MULTI_SIGN = "ALLOW_MULTI_SIGN".getBytes();
   //token id,Incremental，The initial value is 1000000
   private static final byte[] TOKEN_ID_NUM = "TOKEN_ID_NUM".getBytes();
+  //token id,Constant，The value is 1000000
+  private static final byte[] TOKEN_ID_Of_EXCHANGE_ENERGY = "TOKEN_ID_NUM".getBytes();
   //Used only for token updates, once，value is {0,1}
   private static final byte[] TOKEN_UPDATE_DONE = "TOKEN_UPDATE_DONE".getBytes();
   //This value is only allowed to be 0, 1, -1
@@ -193,6 +195,12 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
       this.getTokenIdNum();
     } catch (IllegalArgumentException e) {
       this.saveTokenIdNum(1000000L);
+    }
+
+    try {
+      this.getTokenIdOfExchangeEnergy();
+    } catch (IllegalArgumentException e) {
+      this.saveTokenIdOfExchangeEnergy(1000001L);
     }
 
     try {
@@ -649,6 +657,19 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
         .map(ByteArray::toLong)
         .orElseThrow(
             () -> new IllegalArgumentException("not found TOKEN_ID_NUM"));
+  }
+
+  public void saveTokenIdOfExchangeEnergy(long num) {
+    this.put(TOKEN_ID_Of_EXCHANGE_ENERGY,
+            new BytesCapsule(ByteArray.fromLong(num)));
+  }
+
+  public long getTokenIdOfExchangeEnergy() {
+    return Optional.ofNullable(getUnchecked(TOKEN_ID_Of_EXCHANGE_ENERGY))
+            .map(BytesCapsule::getData)
+            .map(ByteArray::toLong)
+            .orElseThrow(
+                    () -> new IllegalArgumentException("not found TOKEN_ID_Of_EXCHANGE_ENERGY"));
   }
 
   public void saveCreateContractFee(int fee) {

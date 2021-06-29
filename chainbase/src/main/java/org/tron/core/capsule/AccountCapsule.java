@@ -534,7 +534,8 @@ public class AccountCapsule implements ProtoCapsule<Account>, Comparable<Account
    * reduce asset amount.
    */
   public boolean reduceAssetAmountV2(byte[] key, long amount,
-                                     DynamicPropertiesStore dynamicPropertiesStore, AssetIssueV2Store assetIssueV2Store) {
+                                     DynamicPropertiesStore dynamicPropertiesStore,
+                                     AssetIssueV2Store assetIssueV2Store) {
     //key is token name
     if (dynamicPropertiesStore.getAllowSameTokenName() == 0) {
       Map<String, Long> assetMap = this.account.getAssetMap();

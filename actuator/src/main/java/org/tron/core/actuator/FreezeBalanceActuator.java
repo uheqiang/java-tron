@@ -2,15 +2,10 @@ package org.tron.core.actuator;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 import org.tron.common.utils.ByteArray;
 import org.tron.common.utils.Commons;
-import org.tron.common.utils.DBConfig;
 import org.tron.common.utils.StringUtil;
 import org.tron.core.capsule.AccountCapsule;
 import org.tron.core.capsule.DelegatedResourceAccountIndexCapsule;
@@ -24,6 +19,11 @@ import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.Transaction.Result.code;
 import org.tron.protos.contract.BalanceContract.FreezeBalanceContract;
 import org.tron.protos.contract.Common;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @Slf4j(topic = "actuator")
 public class FreezeBalanceActuator extends AbstractActuator {
@@ -106,7 +106,7 @@ public class FreezeBalanceActuator extends AbstractActuator {
     //asset id
     byte[] key = freezeBalanceContract.getAssetId().toByteArray();
     accountCapsule.reduceAssetAmountV2(key,freezeBalanceContract.getFrozenBalance(),
-            dynamicStore,chainBaseManager.getAssetIssueV2Store());
+            dynamicStore, chainBaseManager.getAssetIssueV2Store());
     accountStore.put(accountCapsule.createDbKey(), accountCapsule);
 
     ret.setStatus(fee, code.SUCESS);
@@ -168,9 +168,9 @@ public class FreezeBalanceActuator extends AbstractActuator {
       throw new ContractValidateException("No asset in this system!");
     }
 
-
-    // 限制特定的Token才能兑换成能量
-    if (!Arrays.equals(assetId,"1000001".getBytes())) {
+    // 限制特定的Token才能兑换成能量:1000001
+    long tokenIdOfExchangeEnergy = dynamicStore.getTokenIdOfExchangeEnergy();
+    if (!Arrays.equals(assetId, String.valueOf(tokenIdOfExchangeEnergy).getBytes())) {
       throw new ContractValidateException("Account has no asset that can be exchanged for energy!");
     }
 
