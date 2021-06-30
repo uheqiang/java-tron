@@ -37,4 +37,13 @@ interface ERC721Metadata
     view
     returns (string memory);
 
+
+  /**
+   * @dev Returns a distinct information for a given asset.
+   * @return information of _tokenId.
+   */
+  function tokenInfo(uint256 _tokenId)
+  external
+  view
+  returns (string memory);
 }
