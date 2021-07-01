@@ -430,23 +430,20 @@ public class Wallet {
   public TransactionCapsule createTransactionCapsule(com.google.protobuf.Message message,
       ContractType contractType) throws ContractValidateException {
     TransactionCapsule trx = new TransactionCapsule(message, contractType);
-    if (contractType != ContractType.CreateSmartContract
-        && contractType != ContractType.TriggerSmartContract) {
+    if (contractType != ContractType.CreateSmartContract && contractType != ContractType.TriggerSmartContract) {
       List<Actuator> actList = ActuatorFactory.createActuator(trx, dbManager);
       for (Actuator act : actList) {
         act.validate();
       }
     }
 
-    if (contractType == ContractType.CreateSmartContract) {
-
-      CreateSmartContract contract = ContractCapsule
-          .getSmartContractFromTransaction(trx.getInstance());
+    /*if (contractType == ContractType.CreateSmartContract) {
+      CreateSmartContract contract = ContractCapsule.getSmartContractFromTransaction(trx.getInstance());
       long percent = contract.getNewContract().getConsumeUserResourcePercent();
       if (percent < 0 || percent > 100) {
         throw new ContractValidateException("percent must be >= 0 and <= 100");
       }
-    }
+    }*/
 
     try {
       BlockId blockId = dbManager.getHeadBlockId();
@@ -454,9 +451,7 @@ public class Wallet {
         blockId = dbManager.getSolidBlockId();
       }
       trx.setReference(blockId.getNum(), blockId.getBytes());
-      long expiration =
-          dbManager.getHeadBlockTimeStamp() + Args.getInstance()
-              .getTrxExpirationTimeInMilliseconds();
+      long expiration = dbManager.getHeadBlockTimeStamp() + Args.getInstance().getTrxExpirationTimeInMilliseconds();
       trx.setExpiration(expiration);
       trx.setTimestamp();
     } catch (Exception e) {

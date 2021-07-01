@@ -74,8 +74,7 @@ public class ProgramInvokeFactoryImpl implements ProgramInvokeFactory {
         case ET_PRE_TYPE:
           if (null != block) {
             lastHash = block.getBlockHeader().getRawDataOrBuilder().getParentHash().toByteArray();
-            coinbase = block.getBlockHeader().getRawDataOrBuilder().getWitnessAddress()
-                .toByteArray();
+            coinbase = block.getBlockHeader().getRawDataOrBuilder().getWitnessAddress().toByteArray();
             timestamp = block.getBlockHeader().getRawDataOrBuilder().getTimestamp() / 1000;
             number = block.getBlockHeader().getRawDataOrBuilder().getNumber();
           }

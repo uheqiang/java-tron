@@ -308,17 +308,17 @@ public class VMActuator implements Actuator2 {
       throw new ContractValidateException("contractName's length cannot be greater than 32");
     }
 
-    long percent = contract.getNewContract().getConsumeUserResourcePercent();
+    /*long percent = contract.getNewContract().getConsumeUserResourcePercent();
     if (percent < 0 || percent > VMConstant.ONE_HUNDRED) {
       throw new ContractValidateException("percent must be >= 0 and <= 100");
-    }
+    }*/
 
     byte[] contractAddress = WalletUtil.generateContractAddress(trx);
+    //System.out.println("合约地址：" + MUtil.encode58Check(contractAddress));
     // insure the new contract address haven't exist
     if (repository.getAccount(contractAddress) != null) {
       throw new ContractValidateException(
-          "Trying to create a contract with existing contract address: " + MUtil
-              .encode58Check(contractAddress));
+          "Trying to create a contract with existing contract address: " + MUtil.encode58Check(contractAddress));
     }
 
     newSmartContract = newSmartContract.toBuilder().setContractAddress(ByteString.copyFrom(contractAddress)).build();
@@ -355,7 +355,8 @@ public class VMActuator implements Actuator2 {
         }
         energyLimit = getAccountEnergyLimitWithFixRatio(creator, feeLimit, callValue);
       } else {
-        energyLimit = getAccountEnergyLimitWithFloatRatio(creator, feeLimit, callValue);
+        //energyLimit = getAccountEnergyLimitWithFloatRatio(creator, feeLimit, callValue);
+        energyLimit = newSmartContract.getOriginEnergyLimit();
       }
 
       checkTokenValueAndId(tokenValue, tokenId);
@@ -363,8 +364,7 @@ public class VMActuator implements Actuator2 {
       byte[] ops = newSmartContract.getBytecode().toByteArray();
       rootInternalTransaction = new InternalTransaction(trx, trxType);
 
-      long maxCpuTimeOfOneTx = repository.getDynamicPropertiesStore()
-          .getMaxCpuTimeOfOneTx() * VMConstant.ONE_THOUSAND;
+      long maxCpuTimeOfOneTx = repository.getDynamicPropertiesStore().getMaxCpuTimeOfOneTx() * VMConstant.ONE_THOUSAND;
       long thisTxCPULimitInUs = (long) (maxCpuTimeOfOneTx * getCpuLimitInUsRatio());
       long vmStartInUs = System.nanoTime() / VMConstant.ONE_THOUSAND;
       long vmShouldEndInUs = vmStartInUs + thisTxCPULimitInUs;
@@ -528,30 +528,28 @@ public class VMActuator implements Actuator2 {
     // can change the calc way
     long leftEnergyFromFreeze = repository.getAccountLeftEnergyFromFreeze(account);
     callValue = max(callValue, 0);
-    long energyFromBalance = Math
-        .floorDiv(max(account.getBalance() - callValue, 0), sunPerEnergy);
+    long energyFromBalance = Math.floorDiv(max(account.getBalance() - callValue, 0), sunPerEnergy);
 
     long energyFromFeeLimit;
     long totalBalanceForEnergyFreeze = account.getAllFrozenBalanceForEnergy();
+    //获取用户的能量余额
+    //long totalBalanceForEnergyFreeze = account.getEnergyFrozenBalance();
     if (0 == totalBalanceForEnergyFreeze) {
       energyFromFeeLimit = feeLimit / sunPerEnergy;
     } else {
-      long totalEnergyFromFreeze = repository
-          .calculateGlobalEnergyLimit(account);
+      long totalEnergyFromFreeze = repository.calculateGlobalEnergyLimit(account);
       long leftBalanceForEnergyFreeze = getEnergyFee(totalBalanceForEnergyFreeze,
-          leftEnergyFromFreeze,
-          totalEnergyFromFreeze);
+          leftEnergyFromFreeze, totalEnergyFromFreeze);
 
       if (leftBalanceForEnergyFreeze >= feeLimit) {
         energyFromFeeLimit = BigInteger.valueOf(totalEnergyFromFreeze)
             .multiply(BigInteger.valueOf(feeLimit))
             .divide(BigInteger.valueOf(totalBalanceForEnergyFreeze)).longValueExact();
       } else {
-        energyFromFeeLimit = Math
-            .addExact(leftEnergyFromFreeze,
-                (feeLimit - leftBalanceForEnergyFreeze) / sunPerEnergy);
+        energyFromFeeLimit = Math.addExact(leftEnergyFromFreeze, (feeLimit - leftBalanceForEnergyFreeze) / sunPerEnergy);
       }
     }
+
 
     return min(Math.addExact(leftEnergyFromFreeze, energyFromBalance), energyFromFeeLimit);
   }

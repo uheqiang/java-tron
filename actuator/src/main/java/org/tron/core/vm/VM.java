@@ -103,6 +103,7 @@ public class VM {
       if (op == null) {
         throw Program.Exception.invalidOpCode(program.getCurrentOp());
       }
+      System.out.println("************************执行的操作码：" + op.name());
 
       // hard fork for 3.2
       if (!VMConfig.allowTvmTransferTrc10()) {
@@ -315,7 +316,7 @@ public class VM {
       }
 
       program.spendEnergy(energyCost, op.name());
-      program.checkCPUTimeLimit(op.name());
+      //program.checkCPUTimeLimit(op.name());
 
       // Execute operation
       switch (op) {
