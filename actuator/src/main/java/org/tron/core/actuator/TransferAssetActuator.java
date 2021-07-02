@@ -55,6 +55,7 @@ public class TransferAssetActuator extends AbstractActuator {
     AccountStore accountStore = chainBaseManager.getAccountStore();
     DynamicPropertiesStore dynamicStore = chainBaseManager.getDynamicPropertiesStore();
     AssetIssueStore assetIssueStore = chainBaseManager.getAssetIssueStore();
+    AssetIssueV2Store assetIssueV2Store = chainBaseManager.getAssetIssueV2Store();
     try {
       TransferAssetContract transferAssetContract = this.any.unpack(TransferAssetContract.class);
       byte[] ownerAddress = transferAssetContract.getOwnerAddress().toByteArray();
@@ -76,12 +77,12 @@ public class TransferAssetActuator extends AbstractActuator {
       //Commons.adjustBalance(accountStore, accountStore.getBlackhole().createDbKey(), fee);
 
       AccountCapsule ownerAccountCapsule = accountStore.get(ownerAddress);
-      if (!ownerAccountCapsule.reduceAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueStore)) {
+      if (!ownerAccountCapsule.reduceAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueV2Store)) {
         throw new ContractExeException("reduceAssetAmount failed !");
       }
       accountStore.put(ownerAddress, ownerAccountCapsule);
 
-      toAccountCapsule.addAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueStore);
+      toAccountCapsule.addAssetAmountV2(assetName.toByteArray(), amount, dynamicStore, assetIssueV2Store);
       accountStore.put(toAddress, toAccountCapsule);
 
       ret.setStatus(fee, code.SUCESS);

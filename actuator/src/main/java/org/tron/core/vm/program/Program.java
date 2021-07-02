@@ -985,8 +985,12 @@ public class Program {
 
   }
 
+  /**
+   * 遇到异常，只消耗已产生的能量费用
+   */
   public void spendAllEnergy() {
-    spendEnergy(getEnergyLimitLeft().longValue(), "Spending all remaining");
+    //spendEnergy(getEnergyLimitLeft().longValue(), "Spending all remaining");
+    spendEnergy(0L,"Spending used");
   }
 
   public void refundEnergy(long energyValue, String cause) {
