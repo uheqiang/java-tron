@@ -990,8 +990,7 @@ public class Program {
   }
 
   public void refundEnergy(long energyValue, String cause) {
-    logger
-        .debug("[{}] Refund for cause: [{}], energy: [{}]", invoke.hashCode(), cause, energyValue);
+    logger.debug("[{}] Refund for cause: [{}], energy: [{}]", invoke.hashCode(), cause, energyValue);
     getResult().refundEnergy(energyValue);
   }
 

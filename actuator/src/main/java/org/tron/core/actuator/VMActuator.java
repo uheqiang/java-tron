@@ -190,12 +190,12 @@ public class VMActuator implements Actuator2 {
         //创建合约，消费能量
         if (TrxType.TRX_CONTRACT_CREATION_TYPE == trxType && !result.isRevert()) {
           byte[] code = program.getResult().getHReturn();
+          //保存合约需要消耗能量
           long saveCodeEnergy = (long) getLength(code) * EnergyCost.getInstance().getCREATE_DATA();
           long afterSpend = program.getEnergyLimitLeft().longValue() - saveCodeEnergy;
           if (afterSpend < 0) {
             if (null == result.getException()) {
-              result.setException(Program.Exception
-                  .notEnoughSpendEnergy("save just created contract code",
+              result.setException(Program.Exception.notEnoughSpendEnergy("save just created contract code",
                       saveCodeEnergy, program.getEnergyLimitLeft().longValue()));
             }
           } else {
@@ -364,6 +364,7 @@ public class VMActuator implements Actuator2 {
       byte[] ops = newSmartContract.getBytecode().toByteArray();
       rootInternalTransaction = new InternalTransaction(trx, trxType);
 
+      //每一笔交易执行占用CUP的时间最长为50秒
       long maxCpuTimeOfOneTx = repository.getDynamicPropertiesStore().getMaxCpuTimeOfOneTx() * VMConstant.ONE_THOUSAND;
       long thisTxCPULimitInUs = (long) (maxCpuTimeOfOneTx * getCpuLimitInUsRatio());
       long vmStartInUs = System.nanoTime() / VMConstant.ONE_THOUSAND;
@@ -462,7 +463,8 @@ public class VMActuator implements Actuator2 {
         energyLimit = VMConstant.ENERGY_LIMIT_IN_CONSTANT_TX;
       } else {
         AccountCapsule creator = repository.getAccount(deployedContract.getInstance().getOriginAddress().toByteArray());
-        energyLimit = getTotalEnergyLimit(creator, caller, contract, feeLimit, callValue);
+        //energyLimit = getTotalEnergyLimit(creator, caller, contract, feeLimit, callValue);
+        energyLimit = contract.getOriginEnergyLimit();
       }
 
       long maxCpuTimeOfOneTx = repository.getDynamicPropertiesStore().getMaxCpuTimeOfOneTx() * VMConstant.ONE_THOUSAND;
@@ -600,8 +602,10 @@ public class VMActuator implements Actuator2 {
       } else {
         // self witness or other witness or fullnode verifies block
         if (trx.getRet(0).getContractRet() == contractResult.OUT_OF_TIME) {
+          //0.0
           cpuLimitRatio = DBConfig.getMinTimeRatio();
         } else {
+          //5.0
           cpuLimitRatio = DBConfig.getMaxTimeRatio();
         }
       }

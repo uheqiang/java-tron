@@ -81,6 +81,7 @@ message TriggerSmartContract {
     bytes data = 4;
     int64 call_token_value = 5;
     int64 token_id = 6;
+    int64 origin_energy_limit = 7;
 }
 
 message ClearABIContract {
