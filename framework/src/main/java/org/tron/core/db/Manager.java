@@ -1553,7 +1553,7 @@ public class Manager {
       energyProcessor.updateAdaptiveTotalEnergyLimit();
     }
 
-    payReward(block);
+    //payReward(block);
 
     if (dynamicPropertiesStore.getNextMaintenanceTime() <= block.getTimeStamp()) {
       proposalController.processProposals();
