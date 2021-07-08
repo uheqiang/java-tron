@@ -1,48 +1,40 @@
 package org.tron.core.db;
 
-import static org.tron.common.runtime.InternalTransaction.TrxType.TRX_CONTRACT_CALL_TYPE;
-import static org.tron.common.runtime.InternalTransaction.TrxType.TRX_CONTRACT_CREATION_TYPE;
-import static org.tron.common.utils.DecodeUtil.addressPreFixByte;
-
-import java.util.Objects;
-
+import com.google.common.primitives.Bytes;
 import com.google.protobuf.ByteString;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.spongycastle.util.encoders.Hex;
 import org.springframework.util.StringUtils;
+import org.tron.common.crypto.SignUtils;
+import org.tron.common.crypto.SignatureInterface;
 import org.tron.common.runtime.InternalTransaction.TrxType;
 import org.tron.common.runtime.ProgramResult;
 import org.tron.common.runtime.Runtime;
 import org.tron.common.runtime.vm.DataWord;
-import org.tron.common.utils.Commons;
 import org.tron.common.utils.DBConfig;
 import org.tron.common.utils.ForkUtils;
 import org.tron.common.utils.Sha256Hash;
 import org.tron.common.utils.WalletUtil;
-import org.tron.core.Constant;
-import org.tron.core.capsule.AccountCapsule;
-import org.tron.core.capsule.BlockCapsule;
-import org.tron.core.capsule.ContractCapsule;
-import org.tron.core.capsule.ReceiptCapsule;
-import org.tron.core.capsule.TransactionCapsule;
-import org.tron.core.exception.BalanceInsufficientException;
-import org.tron.core.exception.ContractExeException;
-import org.tron.core.exception.ContractValidateException;
-import org.tron.core.exception.ReceiptCheckErrException;
-import org.tron.core.exception.VMIllegalException;
-import org.tron.core.store.AccountStore;
-import org.tron.core.store.CodeStore;
-import org.tron.core.store.ContractStore;
-import org.tron.core.store.DynamicPropertiesStore;
-import org.tron.core.store.StoreFactory;
+import org.tron.core.capsule.*;
+import org.tron.core.exception.*;
+import org.tron.core.store.*;
 import org.tron.protos.Protocol.Transaction;
 import org.tron.protos.Protocol.Transaction.Contract.ContractType;
 import org.tron.protos.Protocol.Transaction.Result.contractResult;
-import org.tron.protos.contract.SmartContractOuterClass.SmartContract.DelegationPay;
+import org.tron.protos.contract.SmartContractOuterClass.CreateSmartContract;
+import org.tron.protos.contract.SmartContractOuterClass.DelegationPay;
 import org.tron.protos.contract.SmartContractOuterClass.SmartContract.ABI;
 import org.tron.protos.contract.SmartContractOuterClass.TriggerSmartContract;
+
+import java.security.SignatureException;
+import java.util.Arrays;
+import java.util.Objects;
+
+import static org.tron.common.runtime.InternalTransaction.TrxType.TRX_CONTRACT_CALL_TYPE;
+import static org.tron.common.runtime.InternalTransaction.TrxType.TRX_CONTRACT_CREATION_TYPE;
+import static org.tron.common.utils.DecodeUtil.addressPreFixByte;
 
 @Slf4j(topic = "TransactionTrace")
 public class TransactionTrace {
@@ -166,7 +158,7 @@ public class TransactionTrace {
     receipt.addNetFee(netFee);
   }
 
-  public void exec() throws ContractExeException, ContractValidateException, VMIllegalException {
+  public void exec() throws ContractExeException, ContractValidateException {
     /*  VM execute  */
     runtime.execute(transactionContext);
     //todo 在这里可以设置固定手续费额度
@@ -184,7 +176,7 @@ public class TransactionTrace {
   public void finalization() throws ContractExeException {
     try {
       pay();
-    } catch (BalanceInsufficientException e) {
+    } catch (BalanceInsufficientException | ValidateSignatureException e) {
       throw new ContractExeException(e.getMessage());
     }
     if (StringUtils.isEmpty(transactionContext.getProgramResult().getRuntimeError())) {
@@ -195,91 +187,82 @@ public class TransactionTrace {
   }
 
   /**
-   * 支持委托支付ENERGY
+   * pay actually bill
    */
-  public void paySupportDelegation() throws BalanceInsufficientException {
-    /*byte[] originAccount;
+  public void pay() throws BalanceInsufficientException, ValidateSignatureException {
+    //被委托支付者
+    byte[] delegationAccount;
+    //调用合约者
     byte[] callerAccount;
-    long percent = 0;
-    long originEnergyLimit = 0;
-    switch (trxType) {
-      case TRX_CONTRACT_CREATION_TYPE:
-        callerAccount = TransactionCapsule.getOwner(trx.getInstance().getRawData().getContract(0));
-        originAccount = callerAccount;
-        break;
-      case TRX_CONTRACT_CALL_TYPE:
-        TriggerSmartContract callContract = ContractCapsule.getTriggerContractFromTransaction(trx.getInstance());
-        ContractCapsule contractCapsule = contractStore.get(callContract.getContractAddress().toByteArray());
-        callerAccount = callContract.getOwnerAddress().toByteArray();
-        originAccount = contractCapsule.getOriginAddress();
-        percent = Math.max(Constant.ONE_HUNDRED - contractCapsule.getConsumeUserResourcePercent(), 0);
-        percent = Math.min(percent, Constant.ONE_HUNDRED);
-        originEnergyLimit = contractCapsule.getOriginEnergyLimit();
-        break;
-      default:
-        return;
-    }
-
-    // originAccount Percent = 30%
-    AccountCapsule origin = accountStore.get(originAccount);
-    AccountCapsule caller = accountStore.get(callerAccount);
-    receipt.payEnergyBill(
-            dynamicPropertiesStore, accountStore, forkUtils,
-            origin,
-            caller,
-            percent, originEnergyLimit,
-            energyProcessor,
-            EnergyProcessor.getHeadSlot(dynamicPropertiesStore));*/
-  }
-
-  /**
-   * pay actually bill(include ENERGY and storage).
-   */
-  public void pay() throws BalanceInsufficientException {
-    byte[] originAccount;
-    byte[] callerAccount;
+    DelegationPay delegationPay;
+    long limitPerTransaction;
+    long energyPayLimit;
     /*long percent = 0;
     long originEnergyLimit = 0;*/
-    long payments = 0;
+    //交易待支付的额度
+    long payments;
     switch (trxType) {
-      //创建合约，没有委托支付机制，完全由合约创建者支付手续费
+      //创建合约，有委托支付机制
       case TRX_CONTRACT_CREATION_TYPE:
+        CreateSmartContract contract = ContractCapsule.getSmartContractFromTransaction(trx.getInstance());
+        //验证支付的能量是否不小于链设置的最小值
+        payments = contract.getCallEnergyValue();
+        energyPayLimit = dynamicPropertiesStore.getCreateContractFee();
+        if (payments < energyPayLimit) {
+          throw new BalanceInsufficientException("Payment energy is too low");
+        }
+        delegationPay = contract.getDelegationPay();
+        if (delegationPay.getSupport()) {
+          delegationAccount = delegationPay.getSponsor().toByteArray();
+          ByteString signByDelegation = contract.getDelegationPaySignature();
+          validateDelegationSignature(delegationAccount,signByDelegation,delegationPay);
+        }
         callerAccount = TransactionCapsule.getOwner(trx.getInstance().getRawData().getContract(0));
-        originAccount = callerAccount;
         break;
       //调用合约，可以设置委托支付机制
       case TRX_CONTRACT_CALL_TYPE:
         TriggerSmartContract callContract = ContractCapsule.getTriggerContractFromTransaction(trx.getInstance());
-        ContractCapsule contractCapsule = contractStore.get(callContract.getContractAddress().toByteArray());
-        //调用合约者
-        callerAccount = callContract.getOwnerAddress().toByteArray();
-        //合约拥有者
-        originAccount = contractCapsule.getOriginAddress();
-        /*percent = Math.max(Constant.ONE_HUNDRED - contractCapsule.getConsumeUserResourcePercent(), 0);
-        percent = Math.min(percent, Constant.ONE_HUNDRED);
-        originEnergyLimit = contractCapsule.getOriginEnergyLimit();*/
-
-        DelegationPay delegationPay = contractCapsule.getInstance().getDelegationPay();
-        payments = delegationPay.getSponsorlimitpertransaction();
-        if (!delegationPay.getSupport()) {
-          originAccount = callerAccount;
+        //验证支付的能量是否不小于链设置的最小值
+        payments = callContract.getCallEnergyValue();
+        energyPayLimit = dynamicPropertiesStore.getCreateContractFee();
+        if (payments < energyPayLimit) {
+          throw new BalanceInsufficientException("Payment energy is too low");
         }
+        delegationPay = callContract.getDelegationPay();
+        if (delegationPay.getSupport()) {
+          delegationAccount = delegationPay.getSponsor().toByteArray();
+          ByteString signByDelegation = callContract.getDelegationPaySignature();
+          validateDelegationSignature(delegationAccount,signByDelegation,delegationPay);
+        }
+        callerAccount = callContract.getOwnerAddress().toByteArray();
         break;
       default:
         return;
     }
 
+    if (delegationPay.getSupport()) {
+      delegationAccount = delegationPay.getSponsor().toByteArray();
+      limitPerTransaction = delegationPay.getSponsorlimitpertransaction();
+      if (payments <= limitPerTransaction){
+        //由delegation支付全部
+        callerAccount = delegationAccount;
+      }
+      //由二人共同支付
+    } else {
+      //由caller支付全部
+      delegationAccount = callerAccount;
+    }
+
     // originAccount Percent = 30%
-    AccountCapsule origin = accountStore.get(originAccount);
+    AccountCapsule agent = accountStore.get(delegationAccount);
     AccountCapsule caller = accountStore.get(callerAccount);
     receipt.payEnergyBill(
             dynamicPropertiesStore,
             accountStore,
             forkUtils,
-            origin,
+            agent,
             caller,
             payments,
-            /*originEnergyLimit,*/
             energyProcessor,
             EnergyProcessor.getHeadSlot(dynamicPropertiesStore));
   }
@@ -353,5 +336,32 @@ public class TransactionTrace {
     NORMAL,
     LONG_RUNNING,
     OUT_OF_TIME
+  }
+
+  // 验证被委托支付者的签名
+  private boolean validateDelegationSignature(byte[] delegationAccount, ByteString sign,
+                                              DelegationPay delegationPay) throws ValidateSignatureException {
+    try {
+      Sha256Hash hash = Sha256Hash.of(DBConfig.isECKeyCryptoEngine(), delegationPay.toByteArray());
+      byte[] address = SignUtils.signatureToAddress(hash.getBytes(),
+              getBase64FromByteString(sign), DBConfig.isECKeyCryptoEngine());
+      if (!Arrays.equals(delegationAccount, address)) {
+        throw new ValidateSignatureException("delegation sig verify error");
+      }
+    } catch (SignatureException e) {
+      throw new ValidateSignatureException(e.getMessage());
+    }
+    return true;
+  }
+
+  private static String getBase64FromByteString(ByteString sign) {
+    byte[] r = sign.substring(0, 32).toByteArray();
+    byte[] s = sign.substring(32, 64).toByteArray();
+    byte v = sign.byteAt(64);
+    if (v < 27) {
+      v += 27; //revId -> v
+    }
+    SignatureInterface signature = SignUtils.fromComponents(r, s, v, DBConfig.isECKeyCryptoEngine());
+    return signature.toBase64();
   }
 }

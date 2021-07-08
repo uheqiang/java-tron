@@ -457,12 +457,12 @@ public class VMActuator implements Actuator2 {
         logger.info("invalid feeLimit {}", feeLimit);
         throw new ContractValidateException("feeLimit must be >= 0 and <= " + VMConfig.MAX_FEE_LIMIT);
       }
-      AccountCapsule caller = repository.getAccount(callerAddress);
+      //AccountCapsule caller = repository.getAccount(callerAddress);
       long energyLimit;
       if (isConstanCall) {
         energyLimit = VMConstant.ENERGY_LIMIT_IN_CONSTANT_TX;
       } else {
-        AccountCapsule creator = repository.getAccount(deployedContract.getInstance().getOriginAddress().toByteArray());
+        //AccountCapsule creator = repository.getAccount(deployedContract.getInstance().getOriginAddress().toByteArray());
         //energyLimit = getTotalEnergyLimit(creator, caller, contract, feeLimit, callValue);
         energyLimit = contract.getOriginEnergyLimit();
       }

@@ -115,36 +115,22 @@ public class ReceiptCapsule {
   public void payEnergyBill(DynamicPropertiesStore dynamicPropertiesStore,
                             AccountStore accountStore,
                             ForkUtils forkUtils,
-                            AccountCapsule origin,
+                            AccountCapsule agent,
                             AccountCapsule caller,
                             long payments,
-                            /*long originEnergyLimit,*/
                             EnergyProcessor energyProcessor,
                             long now) throws BalanceInsufficientException {
     if (receipt.getEnergyUsageTotal() <= 0) {
       return;
     }
 
-    // AllowTvmConstantinople == 1
-    /*if (Objects.isNull(origin) && dynamicPropertiesStore.getAllowTvmConstantinople() == 1) {
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, receipt.getEnergyUsageTotal(), energyProcessor, now);
-      return;
-    }*/
-
     // 创建合约 或 调用合约时不支持委托支付
-    if (caller.getAddress().equals(origin.getAddress())) {
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, receipt.getEnergyUsageTotal(), energyProcessor, now);
+    if (caller.getAddress().equals(agent.getAddress())) {
+      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, agent, receipt.getEnergyUsageTotal(), energyProcessor, now);
     } else {
-      /*long originUsage = Math.multiplyExact(receipt.getEnergyUsageTotal(), percent) / 100;
-      originUsage = getOriginUsage(dynamicPropertiesStore, origin, originEnergyLimit, energyProcessor, originUsage);
-      long callerUsage = receipt.getEnergyUsageTotal() - originUsage;
-      energyProcessor.useEnergy(origin, originUsage, now);
-      this.setOriginEnergyUsage(originUsage);
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, callerUsage, energyProcessor, now);*/
-
-      // 调用合约支持委托支付
+      // 创建合约 或 调用合约时支持委托支付
       long callerUsage = receipt.getEnergyUsageTotal();
-      long originEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(origin);
+      long originEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(agent);
       // 调用者支付
       if (payments <= 0 || originEnergyLeft <= 0) {
         payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, callerUsage, energyProcessor, now);
@@ -158,7 +144,7 @@ public class ReceiptCapsule {
       if (originEnergyLeft - payments >= 0) {
         // 被委托者支付
         if (callerUsage <= payments) {
-          payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, origin, callerUsage, energyProcessor, now);
+          payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, agent, callerUsage, energyProcessor, now);
           return;
         } else {
           // 联合支付
@@ -180,7 +166,7 @@ public class ReceiptCapsule {
         payEnergyBill(dynamicPropertiesStore,
                 accountStore,
                 forkUtils,
-                origin,
+                agent,
                 mandatorPayments,
                 energyProcessor,
                 now);
@@ -194,21 +180,10 @@ public class ReceiptCapsule {
                 now);
       }
       throw new BalanceInsufficientException(StringUtil.createReadableString(caller.createDbKey())
-              + " or " + StringUtil.createReadableString(origin.createDbKey())
+              + " or " + StringUtil.createReadableString(agent.createDbKey())
               + " insufficient balance");
     }
   }
-
-//  private long getOriginUsage(DynamicPropertiesStore dynamicPropertiesStore, AccountCapsule origin,
-//      long originEnergyLimit,
-//      EnergyProcessor energyProcessor, long originUsage) {
-//
-//    if (checkForEnergyLimit(dynamicPropertiesStore)) {
-//      return Math.min(originUsage,
-//          Math.min(energyProcessor.getAccountLeftEnergyFromFreeze(origin), originEnergyLimit));
-//    }
-//    return Math.min(originUsage, energyProcessor.getAccountLeftEnergyFromFreeze(origin));
-//  }
 
   private void payEnergyBill(
       DynamicPropertiesStore dynamicPropertiesStore,

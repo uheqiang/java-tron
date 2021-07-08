@@ -43,16 +43,7 @@ message SmartContract {
         }
         repeated Entry entrys = 1;
     }
-    message DelegationPay {
-        // 该合约是否支持代理付费
-        bool support = 1;
-        // 赞助者，暂时只支持合约拥有者
-        bytes sponsor = 2;
-        // 赞助费用总额
-        int64 sponsorbalance = 3;
-        // 单笔交易资助金额上限
-        int64 sponsorlimitpertransaction = 4;
-    }
+
 
     bytes origin_address = 1;
     bytes contract_address = 2;
@@ -67,11 +58,26 @@ message SmartContract {
     DelegationPay delegation_pay = 11;
 }
 
+message DelegationPay {
+    // 该合约是否支持代理付费
+    bool support = 1;
+    // 赞助者，暂时只支持合约拥有者
+    bytes sponsor = 2;
+    // 赞助费用总额
+    int64 sponsorbalance = 3;
+    // 单笔交易资助金额上限
+    int64 sponsorlimitpertransaction = 4;
+}
+
 message CreateSmartContract {
     bytes owner_address = 1;
     SmartContract new_contract = 2;
     int64 call_token_value = 3;
     int64 token_id = 4;
+    int64 origin_energy_limit = 5;
+    int64 call_energy_value = 6;
+    DelegationPay delegation_pay = 7;
+    bytes delegation_pay_signature = 8;
 }
 
 message TriggerSmartContract {
@@ -82,6 +88,9 @@ message TriggerSmartContract {
     int64 call_token_value = 5;
     int64 token_id = 6;
     int64 origin_energy_limit = 7;
+    int64 call_energy_value = 8;
+    DelegationPay delegation_pay = 9;
+    bytes delegation_pay_signature = 10;
 }
 
 message ClearABIContract {

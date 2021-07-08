@@ -127,6 +127,8 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
   private static final byte[] CREATE_CONTRACT_FEE = "CREATE_CONTRACT_FEE".getBytes();
   private static final byte[] CALL_CONTRACT_FEE = "CALL_CONTRACT_FEE".getBytes();
 
+  private static final byte[] ENERGY_PAY_LIMIT = "CALL_CONTRACT_FEE".getBytes();
+
   @Autowired
   private DynamicPropertiesStore(@Value("properties") String dbName) {
     super(dbName);
@@ -626,6 +628,12 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
       this.saveCreateContractFee(1);
     }
 
+    /*try {
+      this.getEnergyPayLimit();
+    } catch (IllegalArgumentException e) {
+      this.setEnergyPayLimit(1);
+    }*/
+
   }
 
 
@@ -645,6 +653,19 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
     }
     return result;
   }
+
+  /*public void setEnergyPayLimit(long energyPayLimit) {
+    this.put(ENERGY_PAY_LIMIT,
+            new BytesCapsule(ByteArray.fromLong(energyPayLimit)));
+  }
+
+  public long getEnergyPayLimit() {
+    return Optional.ofNullable(getUnchecked(ENERGY_PAY_LIMIT))
+            .map(BytesCapsule::getData)
+            .map(ByteArray::toLong)
+            .orElseThrow(
+                    () -> new IllegalArgumentException("not found TOKEN_ID_NUM"));
+  }*/
 
   public void saveTokenIdNum(long num) {
     this.put(TOKEN_ID_NUM,
@@ -672,11 +693,11 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
                     () -> new IllegalArgumentException("not found TOKEN_ID_Of_EXCHANGE_ENERGY"));
   }
 
-  public void saveCreateContractFee(int fee) {
-    this.put(CREATE_CONTRACT_FEE, new BytesCapsule(ByteArray.fromInt(fee)));
+  public void saveCreateContractFee(long fee) {
+    this.put(CREATE_CONTRACT_FEE, new BytesCapsule(ByteArray.fromLong(fee)));
   }
 
-  public int getCreateContractFee() {
+  public long getCreateContractFee() {
     return Optional.ofNullable(getUnchecked(CREATE_CONTRACT_FEE))
             .map(BytesCapsule::getData)
             .map(ByteArray::toInt)
@@ -684,8 +705,8 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
                     () -> new IllegalArgumentException("not found CREATE_ACCOUNT_FEE"));
   }
 
-  public void saveCallContractFee(int fee) {
-    this.put(CALL_CONTRACT_FEE, new BytesCapsule(ByteArray.fromInt(fee)));
+  public void saveCallContractFee(long fee) {
+    this.put(CALL_CONTRACT_FEE, new BytesCapsule(ByteArray.fromLong(fee)));
   }
 
   public int getCallContractFee() {
