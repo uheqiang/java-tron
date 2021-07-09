@@ -197,8 +197,6 @@ public class TransactionTrace {
     DelegationPay delegationPay;
     long limitPerTransaction;
     long energyPayLimit;
-    /*long percent = 0;
-    long originEnergyLimit = 0;*/
     //交易待支付的额度
     long payments;
     switch (trxType) {
@@ -212,7 +210,7 @@ public class TransactionTrace {
           throw new BalanceInsufficientException("Payment energy is too low");
         }
         delegationPay = contract.getDelegationPay();
-        if (delegationPay.getSupport()) {
+        if (delegationPay != null && delegationPay.getSupport()) {
           delegationAccount = delegationPay.getSponsor().toByteArray();
           ByteString signByDelegation = contract.getDelegationPaySignature();
           validateDelegationSignature(delegationAccount,signByDelegation,delegationPay);
@@ -229,7 +227,7 @@ public class TransactionTrace {
           throw new BalanceInsufficientException("Payment energy is too low");
         }
         delegationPay = callContract.getDelegationPay();
-        if (delegationPay.getSupport()) {
+        if (delegationPay != null && delegationPay.getSupport()) {
           delegationAccount = delegationPay.getSponsor().toByteArray();
           ByteString signByDelegation = callContract.getDelegationPaySignature();
           validateDelegationSignature(delegationAccount,signByDelegation,delegationPay);
@@ -339,7 +337,7 @@ public class TransactionTrace {
   }
 
   // 验证被委托支付者的签名
-  private boolean validateDelegationSignature(byte[] delegationAccount, ByteString sign,
+  private void validateDelegationSignature(byte[] delegationAccount, ByteString sign,
                                               DelegationPay delegationPay) throws ValidateSignatureException {
     try {
       Sha256Hash hash = Sha256Hash.of(DBConfig.isECKeyCryptoEngine(), delegationPay.toByteArray());
@@ -351,7 +349,6 @@ public class TransactionTrace {
     } catch (SignatureException e) {
       throw new ValidateSignatureException(e.getMessage());
     }
-    return true;
   }
 
   private static String getBase64FromByteString(ByteString sign) {
@@ -359,7 +356,7 @@ public class TransactionTrace {
     byte[] s = sign.substring(32, 64).toByteArray();
     byte v = sign.byteAt(64);
     if (v < 27) {
-      v += 27; //revId -> v
+      v += 27;
     }
     SignatureInterface signature = SignUtils.fromComponents(r, s, v, DBConfig.isECKeyCryptoEngine());
     return signature.toBase64();
