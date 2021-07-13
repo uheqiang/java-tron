@@ -350,20 +350,20 @@ public class Wallet {
     if (accountCapsule == null) {
       return null;
     }
-    BandwidthProcessor processor = new BandwidthProcessor(dbManager);
-    processor.updateUsage(accountCapsule);
+//    BandwidthProcessor processor = new BandwidthProcessor(dbManager);
+//    processor.updateUsage(accountCapsule);
 
-    EnergyProcessor energyProcessor = new EnergyProcessor(dbManager.getDynamicPropertiesStore(),
-        dbManager.getAccountStore());
-    energyProcessor.updateUsage(accountCapsule);
+//    EnergyProcessor energyProcessor = new EnergyProcessor(dbManager.getDynamicPropertiesStore(),
+//        dbManager.getAccountStore());
+//    energyProcessor.updateUsage(accountCapsule);
 
-    long genesisTimeStamp = dbManager.getGenesisBlock().getTimeStamp();
-    accountCapsule.setLatestConsumeTime(genesisTimeStamp
-        + BLOCK_PRODUCED_INTERVAL * accountCapsule.getLatestConsumeTime());
-    accountCapsule.setLatestConsumeFreeTime(genesisTimeStamp
-        + BLOCK_PRODUCED_INTERVAL * accountCapsule.getLatestConsumeFreeTime());
-    accountCapsule.setLatestConsumeTimeForEnergy(genesisTimeStamp
-        + BLOCK_PRODUCED_INTERVAL * accountCapsule.getLatestConsumeTimeForEnergy());
+//    long genesisTimeStamp = dbManager.getGenesisBlock().getTimeStamp();
+//    accountCapsule.setLatestConsumeTime(genesisTimeStamp
+//        + BLOCK_PRODUCED_INTERVAL * accountCapsule.getLatestConsumeTime());
+//    accountCapsule.setLatestConsumeFreeTime(genesisTimeStamp
+//        + BLOCK_PRODUCED_INTERVAL * accountCapsule.getLatestConsumeFreeTime());
+//    accountCapsule.setLatestConsumeTimeForEnergy(genesisTimeStamp
+//        + BLOCK_PRODUCED_INTERVAL * accountCapsule.getLatestConsumeTimeForEnergy());
 
     return accountCapsule.getInstance();
   }

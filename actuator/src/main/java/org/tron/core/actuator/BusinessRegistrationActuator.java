@@ -47,8 +47,8 @@ public class BusinessRegistrationActuator extends AbstractActuator {
             AccountCapsule accountCapsule = new AccountCapsule(businessCreateContract.getAccountAddress(),
                     businessCreateContract.getType(), timestamp,  personalInfo);
 
-            String keyString = personalInfo.getAppID().trim();
-            accountStore.put(keyString.getBytes(), accountCapsule);
+//            String keyString = personalInfo.getAppID().trim();
+//            accountStore.put(keyString.getBytes(), accountCapsule);
             accountStore.put(businessCreateContract.getAccountAddress().toByteArray(), accountCapsule);
             ret.setStatus(fee, Protocol.Transaction.Result.code.SUCESS);
         } catch (InvalidProtocolBufferException e) {
@@ -86,13 +86,13 @@ public class BusinessRegistrationActuator extends AbstractActuator {
             throw new ContractValidateException("Invalid account address");
         }
 
-        Protocol.PersonalInfo personalInfo = contract.getPersonalInfo();
-        String keyString = personalInfo.getAppID().trim();
-        // 检查商家是否注册
-        if (accountStore.has(keyString.getBytes()) && contract.getType().getNumber() == Protocol.AccountType.Normal_VALUE) {
-            String readableOwnerAddress = StringUtil.createReadableString(accountAddress);
-            throw new ContractValidateException("Business information[" + readableOwnerAddress + "] not exists");
-        }
+//        Protocol.PersonalInfo personalInfo = contract.getPersonalInfo();
+//        String keyString = personalInfo.getAppID().trim();
+//        // 检查商家是否注册
+//        if (accountStore.has(keyString.getBytes()) && contract.getType().getNumber() == Protocol.AccountType.Normal_VALUE) {
+//            String readableOwnerAddress = StringUtil.createReadableString(accountAddress);
+//            throw new ContractValidateException("Business information[" + readableOwnerAddress + "] not exists");
+//        }
         // 验证商家地址已存在
         if (accountStore.has(accountAddress)) {
             String readableAddress = StringUtil.createReadableString(accountAddress);

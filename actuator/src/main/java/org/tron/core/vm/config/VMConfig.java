@@ -48,10 +48,10 @@ public class VMConfig {
   private static boolean ALLOW_TVM_SOLIDITY_059 = false;
 
   @Setter
-  private static int CREATE_CONTRACT_FEE = 0;
+  private static long CREATE_CONTRACT_FEE = 0;
 
   @Setter
-  private static int CALL_CONTRACT_FEE = 0;
+  private static long CALL_CONTRACT_FEE = 0;
 
 
   private VMConfig() {
@@ -89,11 +89,11 @@ public class VMConfig {
     ALLOW_TVM_SOLIDITY_059 = allow == 1;
   }
 
-  public static void initCreateContractFee(int fee) {
+  public static void initCreateContractFee(long fee) {
     CREATE_CONTRACT_FEE = fee;
   }
 
-  public static void initCallContractFee(int fee) {
+  public static void initCallContractFee(long fee) {
     CALL_CONTRACT_FEE = fee;
   }
 
@@ -117,11 +117,11 @@ public class VMConfig {
     return ALLOW_TVM_SOLIDITY_059;
   }
 
-  public static int getCreateContractFee() {
+  public static long getCreateContractFee() {
     return CREATE_CONTRACT_FEE;
   }
 
-  public static int getCallContractFee() {
+  public static long getCallContractFee() {
     return CALL_CONTRACT_FEE;
   }
 

@@ -35,10 +35,7 @@ import org.tron.core.capsule.ContractCapsule;
 import org.tron.core.capsule.TransactionCapsule;
 import org.tron.core.config.DefaultConfig;
 import org.tron.core.config.args.Args;
-import org.tron.core.exception.BalanceInsufficientException;
-import org.tron.core.exception.ContractExeException;
-import org.tron.core.exception.ContractValidateException;
-import org.tron.core.exception.VMIllegalException;
+import org.tron.core.exception.*;
 import org.tron.core.store.StoreFactory;
 import org.tron.core.vm.config.VMConfig;
 import org.tron.protos.Protocol.Account;
@@ -116,8 +113,8 @@ public class TransactionTraceTest {
 
   @Test
   public void testUseFee()
-      throws InvalidProtocolBufferException, VMIllegalException, BalanceInsufficientException,
-      ContractExeException, ContractValidateException {
+          throws InvalidProtocolBufferException, VMIllegalException, BalanceInsufficientException,
+          ContractExeException, ContractValidateException, ValidateSignatureException {
     String contractName = "tracetestContract";
     String code = "608060405234801561001057600080fd5b5060005b6103e88110156100375760008181526020819"
         + "05260409020819055600a01610014565b5061010f806100476000396000f300608060405260043610605257"
@@ -147,8 +144,8 @@ public class TransactionTraceTest {
 
   @Test
   public void testUseUsage()
-      throws VMIllegalException, BalanceInsufficientException,
-      ContractValidateException, ContractExeException {
+          throws VMIllegalException, BalanceInsufficientException,
+          ContractValidateException, ContractExeException, ValidateSignatureException {
 
     AccountCapsule accountCapsule = new AccountCapsule(ByteString.copyFrom("owner".getBytes()),
         ByteString.copyFrom(Commons.decodeFromBase58Check(OwnerAddress)), AccountType.Normal,
@@ -202,8 +199,8 @@ public class TransactionTraceTest {
 
   @Test
   public void testTriggerUseFee()
-      throws InvalidProtocolBufferException, VMIllegalException, ContractExeException,
-      ContractValidateException, BalanceInsufficientException {
+          throws InvalidProtocolBufferException, VMIllegalException, ContractExeException,
+          ContractValidateException, BalanceInsufficientException, ValidateSignatureException {
     String contractName = "tracetestContract";
     String code = "608060405234801561001057600080fd5b5060005b6103e88110156100375760008181526020819"
         + "05260409020819055600a01610014565b5061010f806100476000396000f300608060405260043610605257"
@@ -264,8 +261,8 @@ public class TransactionTraceTest {
 
   @Test
   public void testTriggerUseUsage()
-      throws VMIllegalException, ContractExeException,
-      ContractValidateException, BalanceInsufficientException {
+          throws VMIllegalException, ContractExeException,
+          ContractValidateException, BalanceInsufficientException, ValidateSignatureException {
     String contractName = "tracetestContract";
     String code = "608060405234801561001057600080fd5b5060005b6103e88110156100375760008181526020819"
         + "05260409020819055600a01610014565b5061010f806100476000396000f300608060405260043610605257"
@@ -324,8 +321,8 @@ public class TransactionTraceTest {
   }
 
   private byte[] deployInit(Transaction transaction)
-      throws VMIllegalException, ContractExeException,
-      ContractValidateException, BalanceInsufficientException {
+          throws VMIllegalException, ContractExeException,
+          ContractValidateException, BalanceInsufficientException, ValidateSignatureException {
 
     AccountCapsule accountCapsule = new AccountCapsule(ByteString.copyFrom("owner".getBytes()),
         ByteString.copyFrom(Commons.decodeFromBase58Check(OwnerAddress)), AccountType.Normal,
@@ -350,7 +347,7 @@ public class TransactionTraceTest {
   }
 
   @Test
-  public void testPay() throws BalanceInsufficientException {
+  public void testPay() throws BalanceInsufficientException, ValidateSignatureException {
     Account account = Account.newBuilder()
         .setAddress(ownerAddress)
         .setBalance(1000000)

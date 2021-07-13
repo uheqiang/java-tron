@@ -56,7 +56,8 @@ public class CreateAccountActuator extends AbstractActuator {
         PersonalInfo personalInfo = accountCreateContract.getPersonalInfo();
         AppAccountIndexCapsule appAccountIndexCapsule =  new AppAccountIndexCapsule(
                 personalInfo,  accountCreateContract.getAccountAddress(), timestamp);
-        byte[] key = personalInfo.getAppID().concat(personalInfo.getIdentity()).trim().getBytes();
+        ByteString ownerAddress = accountCreateContract.getOwnerAddress();
+        byte[] key = ownerAddress.toStringUtf8().concat(personalInfo.getIdentity()).trim().getBytes();
         appAccountIndexStore.put(key, appAccountIndexCapsule);
       }
 
@@ -99,7 +100,7 @@ public class CreateAccountActuator extends AbstractActuator {
 
     AccountCapsule accountCapsule = accountStore.get(ownerAddress);
     // 检查商家是否已注册
-    if (accountCapsule == null && contract.getType().getNumber() == AccountType.Normal_VALUE) {
+    if (accountCapsule == null && accountCapsule.getType().getNumber() == AccountType.Normal_VALUE) {
       String readableOwnerAddress = StringUtil.createReadableString(ownerAddress);
       throw new ContractValidateException("Business[" + readableOwnerAddress + "] not exists");
     }
@@ -120,21 +121,21 @@ public class CreateAccountActuator extends AbstractActuator {
     if (contract.getType().getNumber() == AccountType.AssetIssue_VALUE) {
       // 检查该用户已在某一个商家中已注册
       PersonalInfo personalInfo = contract.getPersonalInfo();
-      // 商家ID
-      String appId = personalInfo.getAppID();
-      // 验证商家ID是否注册
-      AccountCapsule business = accountStore.get(appId.trim().getBytes());
-      if (business == null) {
-        throw new ContractValidateException("Business not exists, app[" + appId + "]");
-      }
+//      // 商家ID
+//      String appId = personalInfo.getAppID();
+//      // 验证商家ID是否注册
+//      AccountCapsule business = accountStore.get(appId.trim().getBytes());
+//      if (business == null) {
+//        throw new ContractValidateException("Business not exists, app[" + appId + "]");
+//      }
 
       // 用户身份
       String identity = personalInfo.getIdentity();
-      String key = appId.concat(identity).trim();
+      String key = contract.getOwnerAddress().toStringUtf8().concat(identity).trim();
       AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();
       AppAccountIndexCapsule appAccountIndexCapsule = appAccountIndexStore.get(key.getBytes());
       if (appAccountIndexCapsule != null) {
-        throw new ContractValidateException("User has existed on app[" + appId + "]");
+        throw new ContractValidateException("User has existed on app[" + contract.getOwnerAddress().toStringUtf8() + "]");
       }
     }
     return true;

@@ -69,8 +69,6 @@ message ChainParameters {
 message PersonalInfo {
   //hash(identity_info)
   string identity = 1;
-  //appID
-  string appID = 2;
 }
 
 message AppAcount {
