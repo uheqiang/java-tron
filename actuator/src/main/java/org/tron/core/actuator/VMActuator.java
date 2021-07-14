@@ -191,7 +191,7 @@ public class VMActuator implements Actuator2 {
         if (TrxType.TRX_CONTRACT_CREATION_TYPE == trxType && !result.isRevert()) {
           byte[] code = program.getResult().getHReturn();
           //保存合约需要消耗能量
-          long saveCodeEnergy = (long) getLength(code) * EnergyCost.getInstance().getCREATE_DATA();
+          /*long saveCodeEnergy = (long) getLength(code) * EnergyCost.getInstance().getCREATE_DATA();
           long afterSpend = program.getEnergyLimitLeft().longValue() - saveCodeEnergy;
           if (afterSpend < 0) {
             if (null == result.getException()) {
@@ -203,11 +203,11 @@ public class VMActuator implements Actuator2 {
             if (VMConfig.allowTvmConstantinople()) {
               repository.saveCode(program.getContractAddress().getNoLeadZeroesData(), code);
             }
-          }
-          /*result.spendEnergy(VMConfig.getCreateContractFee());
+          }*/
+          //result.spendEnergy(VMConfig.getCreateContractFee());
           if (VMConfig.allowTvmConstantinople()) {
             repository.saveCode(program.getContractAddress().getNoLeadZeroesData(), code);
-          }*/
+          }
         }
 
         //发送异常 或 交易被撤销
@@ -314,7 +314,7 @@ public class VMActuator implements Actuator2 {
     }*/
 
     byte[] contractAddress = WalletUtil.generateContractAddress(trx);
-    //System.out.println("合约地址：" + MUtil.encode58Check(contractAddress));
+    //System.out.println("===============合约地址：" + MUtil.encode58Check(contractAddress));
     // insure the new contract address haven't exist
     if (repository.getAccount(contractAddress) != null) {
       throw new ContractValidateException(

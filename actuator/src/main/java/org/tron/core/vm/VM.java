@@ -315,7 +315,7 @@ public class VM {
           break;
       }
 
-      program.spendEnergy(energyCost, op.name());
+      //program.spendEnergy(energyCost, op.name());
       program.checkCPUTimeLimit(op.name());
 
       // Execute operation

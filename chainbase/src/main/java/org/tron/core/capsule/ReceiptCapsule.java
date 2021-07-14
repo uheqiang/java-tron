@@ -120,13 +120,13 @@ public class ReceiptCapsule {
                             long payments,
                             EnergyProcessor energyProcessor,
                             long now) throws BalanceInsufficientException {
-    if (receipt.getEnergyUsageTotal() <= 0) {
-      return;
-    }
+//    if (receipt.getEnergyUsageTotal() <= 0) {
+//      return;
+//    }
 
     // 创建合约 或 调用合约时不支持委托支付
     if (caller.getAddress().equals(agent.getAddress())) {
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, agent, receipt.getEnergyUsageTotal(), energyProcessor, now);
+      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, agent, payments/*receipt.getEnergyUsageTotal()*/, energyProcessor, now);
     } else {
       // 创建合约 或 调用合约时支持委托支付
       long callerUsage = receipt.getEnergyUsageTotal();
@@ -178,6 +178,7 @@ public class ReceiptCapsule {
                 callerPayments,
                 energyProcessor,
                 now);
+        return;
       }
       throw new BalanceInsufficientException(StringUtil.createReadableString(caller.createDbKey())
               + " or " + StringUtil.createReadableString(agent.createDbKey())
