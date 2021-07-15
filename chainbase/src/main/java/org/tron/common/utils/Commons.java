@@ -110,7 +110,7 @@ public class Commons {
 
     if (amount < 0 && balance < -amount) {
       throw new BalanceInsufficientException(
-          createReadableString(account.createDbKey()) + " insufficient balance");
+          WalletUtil.encode58Check(account.createDbKey()) + " insufficient balance");
     }
     account.setBalance(Math.addExact(balance, amount));
     accountStore.put(account.getAddress().toByteArray(), account);

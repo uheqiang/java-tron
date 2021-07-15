@@ -9,12 +9,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.spongycastle.util.Strings;
 import org.tron.common.runtime.vm.DataWord;
-import org.tron.common.utils.ByteUtil;
-import org.tron.common.utils.Commons;
-import org.tron.common.utils.DBConfig;
-import org.tron.common.utils.Hash;
-import org.tron.common.utils.Sha256Hash;
-import org.tron.common.utils.StringUtil;
+import org.tron.common.utils.*;
 import org.tron.core.ChainBaseManager;
 import org.tron.core.capsule.AccountCapsule;
 import org.tron.core.capsule.AssetIssueCapsule;
@@ -381,7 +376,7 @@ public class RepositoryImpl implements Repository {
 
     if (value < 0 && balance < -value) {
       throw new RuntimeException(
-          StringUtil.createReadableString(accountCapsule.createDbKey())
+          WalletUtil.encode58Check(accountCapsule.createDbKey())
               + " insufficient balance");
     }
     accountCapsule.setBalance(Math.addExact(balance, value));
@@ -450,7 +445,7 @@ public class RepositoryImpl implements Repository {
 
     if (value < 0 && balance < -value) {
       throw new RuntimeException(
-          StringUtil.createReadableString(accountCapsule.createDbKey())
+          WalletUtil.encode58Check(accountCapsule.createDbKey())
               + " insufficient balance");
     }
     if (value >= 0) {

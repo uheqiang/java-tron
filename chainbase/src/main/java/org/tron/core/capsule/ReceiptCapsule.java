@@ -3,11 +3,7 @@ package org.tron.core.capsule;
 import java.util.Objects;
 import lombok.Getter;
 import lombok.Setter;
-import org.tron.common.utils.Commons;
-import org.tron.common.utils.DBConfig;
-import org.tron.common.utils.ForkUtils;
-import org.tron.common.utils.Sha256Hash;
-import org.tron.common.utils.StringUtil;
+import org.tron.common.utils.*;
 import org.tron.core.Constant;
 import org.tron.core.config.args.Parameter.ForkBlockVersionEnum;
 import org.tron.core.db.EnergyProcessor;
@@ -126,39 +122,23 @@ public class ReceiptCapsule {
 
     // 创建合约 或 调用合约时不支持委托支付
     if (caller.getAddress().equals(agent.getAddress())) {
-      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, agent, payments/*receipt.getEnergyUsageTotal()*/, energyProcessor, now);
+      payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, agent, payments, energyProcessor, now);
     } else {
       // 创建合约 或 调用合约时支持委托支付
-      long callerUsage = receipt.getEnergyUsageTotal();
+      long callerUsage = payments;//receipt.getEnergyUsageTotal();
       long originEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(agent);
       // 调用者支付
-      if (payments <= 0 || originEnergyLeft <= 0) {
+      if (originEnergyLeft <= 0) {
         payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, caller, callerUsage, energyProcessor, now);
         return;
       }
 
+      // 联合支付
+      // 被委托者账户余额不足，不能支付设置的额度，只能支付部分费用
       // 被委托者支付的数量即为当前余额值
-      long mandatorPayments = 0;
-      // 调用者需要自己支付的数量
-      long callerPayments = 0;
-      if (originEnergyLeft - payments >= 0) {
-        // 被委托者支付
-        if (callerUsage <= payments) {
-          payEnergyBill(dynamicPropertiesStore, accountStore, forkUtils, agent, callerUsage, energyProcessor, now);
-          return;
-        } else {
-          // 联合支付
-          mandatorPayments = payments;
-          callerPayments = callerUsage - payments;
-        }
-      } else {
-        // 联合支付
-        // 被委托者账户余额不足，不能支付设置的额度，只能支付部分费用
-        // 被委托者支付的数量即为当前余额值
-        mandatorPayments = originEnergyLeft;
-        // 调用者需要自己支付的数量即为callerUsage - originEnergyLeft
-        callerPayments = callerUsage - mandatorPayments;
-      }
+      long mandatorPayments = originEnergyLeft;
+      // 调用者需要自己支付的数量即为callerUsage - originEnergyLeft
+      long callerPayments = callerUsage - mandatorPayments;
       // 联合支付
       long callerEnergyLeft = energyProcessor.getAccountLeftEnergyFromFreeze(caller);
       if (mandatorPayments > 0 && callerEnergyLeft - callerPayments >= 0) {
@@ -178,11 +158,11 @@ public class ReceiptCapsule {
                 callerPayments,
                 energyProcessor,
                 now);
-        return;
+      } else {
+        throw new BalanceInsufficientException(WalletUtil.encode58Check(caller.createDbKey())
+                + " or " + WalletUtil.encode58Check(agent.createDbKey())
+                + " insufficient balance");
       }
-      throw new BalanceInsufficientException(StringUtil.createReadableString(caller.createDbKey())
-              + " or " + StringUtil.createReadableString(agent.createDbKey())
-              + " insufficient balance");
     }
   }
 
@@ -204,7 +184,8 @@ public class ReceiptCapsule {
       account.setFrozenForEnergy(energyLeft, now);
       accountStore.put(account.getAddress().toByteArray(), account);
     } else {
-      throw new BalanceInsufficientException(StringUtil.createReadableString(account.createDbKey()) + " insufficient balance");
+      //WalletUtil.encode58Check(account.createDbKey())
+      throw new BalanceInsufficientException(WalletUtil.encode58Check(account.createDbKey()) + " insufficient balance");
     }
     /*else {
       energyProcessor.useEnergy(account, accountEnergyLeft, now);

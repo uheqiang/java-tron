@@ -55,12 +55,7 @@ import org.tron.common.logsfilter.trigger.ContractTrigger;
 import org.tron.common.overlay.discover.node.Node;
 import org.tron.common.overlay.message.Message;
 import org.tron.common.runtime.RuntimeImpl;
-import org.tron.common.utils.ByteArray;
-import org.tron.common.utils.ForkController;
-import org.tron.common.utils.Pair;
-import org.tron.common.utils.SessionOptional;
-import org.tron.common.utils.Sha256Hash;
-import org.tron.common.utils.StringUtil;
+import org.tron.common.utils.*;
 import org.tron.common.zksnark.MerkleContainer;
 import org.tron.consensus.Consensus;
 import org.tron.consensus.base.Param.Miner;
@@ -709,7 +704,7 @@ public class Manager {
 
     if (amount < 0 && balance < -amount) {
       throw new BalanceInsufficientException(
-          StringUtil.createReadableString(account.createDbKey()) + " insufficient balance");
+          WalletUtil.encode58Check(account.createDbKey()) + " insufficient balance");
     }
     account.setBalance(Math.addExact(balance, amount));
     this.getAccountStore().put(account.getAddress().toByteArray(), account);

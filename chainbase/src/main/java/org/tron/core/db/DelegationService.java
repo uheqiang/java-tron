@@ -10,6 +10,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.spongycastle.util.encoders.Hex;
 import org.springframework.stereotype.Component;
 import org.tron.common.utils.StringUtil;
+import org.tron.common.utils.WalletUtil;
 import org.tron.core.capsule.AccountCapsule;
 import org.tron.core.capsule.WitnessCapsule;
 import org.tron.core.config.Parameter.ChainConstant;
@@ -215,7 +216,7 @@ public class DelegationService {
 
     if (amount < 0 && allowance < -amount) {
       throw new BalanceInsufficientException(
-          StringUtil.createReadableString(accountAddress) + " insufficient balance");
+              WalletUtil.encode58Check(accountAddress) + " insufficient balance");
     }
     account.setAllowance(allowance + amount);
     accountStore.put(account.createDbKey(), account);

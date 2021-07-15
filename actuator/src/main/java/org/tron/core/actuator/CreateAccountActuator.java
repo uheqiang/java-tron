@@ -6,6 +6,7 @@ import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.tron.common.utils.Commons;
 import org.tron.common.utils.StringUtil;
+import org.tron.common.utils.WalletUtil;
 import org.tron.core.capsule.AccountCapsule;
 import org.tron.core.capsule.AppAccountIndexCapsule;
 import org.tron.core.capsule.TransactionResultCapsule;
@@ -129,13 +130,14 @@ public class CreateAccountActuator extends AbstractActuator {
 //        throw new ContractValidateException("Business not exists, app[" + appId + "]");
 //      }
 
-      // 用户身份
+      // 用户身份，保证在同一个商家中全局唯一
       String identity = personalInfo.getIdentity();
       String key = contract.getOwnerAddress().toStringUtf8().concat(identity).trim();
       AppAccountIndexStore appAccountIndexStore = chainBaseManager.getAppAccountIndexStore();
       AppAccountIndexCapsule appAccountIndexCapsule = appAccountIndexStore.get(key.getBytes());
       if (appAccountIndexCapsule != null) {
-        throw new ContractValidateException("User has existed on app[" + contract.getOwnerAddress().toStringUtf8() + "]");
+        throw new ContractValidateException("User's identity has existed on app[" +
+                WalletUtil.encode58Check(contract.getOwnerAddress().toByteArray()) + "]");
       }
     }
     return true;

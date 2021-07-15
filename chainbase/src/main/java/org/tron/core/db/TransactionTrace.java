@@ -241,7 +241,8 @@ public class TransactionTrace {
     if (delegationPay.getSupport()) {
       delegationAccount = delegationPay.getSponsor().toByteArray();
       limitPerTransaction = delegationPay.getSponsorlimitpertransaction();
-      if (payments <= limitPerTransaction){
+      AccountCapsule account = accountStore.get(delegationAccount);
+      if (payments <= limitPerTransaction && payments <= account.getEnergyFrozenBalance()){
         //由delegation支付全部
         callerAccount = delegationAccount;
       }
