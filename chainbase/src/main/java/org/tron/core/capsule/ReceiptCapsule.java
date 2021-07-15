@@ -160,7 +160,7 @@ public class ReceiptCapsule {
                 now);
       } else {
         throw new BalanceInsufficientException(WalletUtil.encode58Check(caller.createDbKey())
-                + " or " + WalletUtil.encode58Check(agent.createDbKey())
+                + " and " + WalletUtil.encode58Check(agent.createDbKey())
                 + " insufficient balance");
       }
     }
