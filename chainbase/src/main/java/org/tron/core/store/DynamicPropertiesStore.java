@@ -126,8 +126,9 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
   private static final byte[] FUEL_EXCHANGE_RATE = "FUEL_EXCHANGE_RATE".getBytes();
   private static final byte[] CREATE_CONTRACT_FEE = "CREATE_CONTRACT_FEE".getBytes();
   private static final byte[] CALL_CONTRACT_FEE = "CALL_CONTRACT_FEE".getBytes();
+  //private static final byte[] ENERGY_PAY_LIMIT = "CALL_CONTRACT_FEE".getBytes();
 
-  private static final byte[] ENERGY_PAY_LIMIT = "CALL_CONTRACT_FEE".getBytes();
+  private static final byte[] SUPPORT_BUSINESS_SIGN = "SUPPORT_BUSINESS_SIGN".getBytes();
 
   @Autowired
   private DynamicPropertiesStore(@Value("properties") String dbName) {
@@ -628,6 +629,12 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
       this.saveCreateContractFee(1);
     }
 
+    try {
+      this.getSupportBusinessSign();
+    } catch (IllegalArgumentException e) {
+      this.saveSupportBusinessSign(1);
+    }
+
     /*try {
       this.getEnergyPayLimit();
     } catch (IllegalArgumentException e) {
@@ -666,6 +673,19 @@ public class DynamicPropertiesStore extends TronStoreWithRevoking<BytesCapsule> 
             .orElseThrow(
                     () -> new IllegalArgumentException("not found TOKEN_ID_NUM"));
   }*/
+
+  public void saveSupportBusinessSign(long supportBusinessSign) {
+    this.put(SUPPORT_BUSINESS_SIGN,
+            new BytesCapsule(ByteArray.fromLong(supportBusinessSign)));
+  }
+
+  public long getSupportBusinessSign() {
+    return Optional.ofNullable(getUnchecked(SUPPORT_BUSINESS_SIGN))
+            .map(BytesCapsule::getData)
+            .map(ByteArray::toLong)
+            .orElseThrow(
+                    () -> new IllegalArgumentException("not found SUPPORT_BUSINESS_SIGN"));
+  }
 
   public void saveTokenIdNum(long num) {
     this.put(TOKEN_ID_NUM,

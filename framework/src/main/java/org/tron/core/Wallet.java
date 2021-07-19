@@ -466,6 +466,32 @@ public class Wallet {
   public GrpcAPI.Return broadcastTransaction(Transaction signaturedTransaction) {
     GrpcAPI.Return.Builder builder = GrpcAPI.Return.newBuilder();
     TransactionCapsule trx = new TransactionCapsule(signaturedTransaction);
+
+    //校验Business签名
+    if (1 == dbManager.getDynamicPropertiesStore().getSupportBusinessSign()) {
+      try {
+        ByteString sig = signaturedTransaction.getBusinessSignature();
+        Transaction tx = signaturedTransaction.toBuilder().setBusinessSignature(ByteString.EMPTY).build();
+        byte[] hash = tx.toByteArray();
+        String base64 = TransactionCapsule.getBase64FromByteString(sig);
+        byte[] businessAddress = SignUtils.signatureToAddress(hash, base64, DBConfig.isECKeyCryptoEngine());
+        AccountStore accountStore = dbManager.getAccountStore();
+        AccountCapsule accountCapsule = accountStore.get(businessAddress);
+        if (accountCapsule == null || accountCapsule.getType().getNumber() != Protocol.AccountType.Normal_VALUE) {
+          String readableAddress = StringUtil.createReadableString(businessAddress);
+          logger.warn("Broadcast transaction {} has failed, Business {} not exists.", trx.getTransactionId(), readableAddress);
+          return builder.setResult(false).setCode(response_code.SIGERROR)
+                  .setMessage(ByteString.copyFromUtf8("business not exists"))
+                  .build();
+        }
+      } catch (SignatureException e) {
+        logger.warn("Broadcast transaction {} has failed, business sig verify fail.", trx.getTransactionId());
+        return builder.setResult(false).setCode(response_code.SIGERROR)
+                .setMessage(ByteString.copyFromUtf8("business sig verify fail"))
+                .build();
+      }
+    }
+
     trx.setTime(System.currentTimeMillis());
     try {
       Message message = new TransactionMessage(signaturedTransaction.toByteArray());

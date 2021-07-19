@@ -222,7 +222,7 @@ public class TransactionTrace {
         TriggerSmartContract callContract = ContractCapsule.getTriggerContractFromTransaction(trx.getInstance());
         //验证支付的能量是否不小于链设置的最小值
         payments = callContract.getCallEnergyValue();
-        energyPayLimit = dynamicPropertiesStore.getCreateContractFee();
+        energyPayLimit = dynamicPropertiesStore.getCallContractFee();
         if (payments < energyPayLimit) {
           throw new BalanceInsufficientException("Payment energy is too low");
         }

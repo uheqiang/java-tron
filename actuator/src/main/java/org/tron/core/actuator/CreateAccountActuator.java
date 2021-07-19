@@ -101,7 +101,7 @@ public class CreateAccountActuator extends AbstractActuator {
 
     AccountCapsule accountCapsule = accountStore.get(ownerAddress);
     // 检查商家是否已注册
-    if (accountCapsule == null && accountCapsule.getType().getNumber() == AccountType.Normal_VALUE) {
+    if (accountCapsule == null || accountCapsule.getType().getNumber() != AccountType.Normal_VALUE) {
       String readableOwnerAddress = StringUtil.createReadableString(ownerAddress);
       throw new ContractValidateException("Business[" + readableOwnerAddress + "] not exists");
     }

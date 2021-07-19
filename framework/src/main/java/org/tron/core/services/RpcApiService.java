@@ -2360,5 +2360,18 @@ public class RpcApiService implements Service {
 
       responseObserver.onCompleted();
     }
+
+    @Override
+    public void getSupportBusinessSign(EmptyMessage request,
+                                       StreamObserver<NumberMessage> responseObserver) {
+      try {
+        long businessSign = dbManager.getDynamicPropertiesStore().getSupportBusinessSign();
+        NumberMessage message = NumberMessage.newBuilder().setNum(businessSign).build();
+        responseObserver.onNext(message);
+      } catch (Exception e) {
+        responseObserver.onError(getRunTimeException(e));
+      }
+      responseObserver.onCompleted();
+    }
   }
 }
