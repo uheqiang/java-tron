@@ -472,7 +472,7 @@ public class Wallet {
       try {
         ByteString sig = signaturedTransaction.getBusinessSignature();
         Transaction tx = signaturedTransaction.toBuilder().setBusinessSignature(ByteString.EMPTY).build();
-        byte[] hash = tx.toByteArray();
+        byte[] hash = Sha256Hash.of(DBConfig.isECKeyCryptoEngine(),tx.toByteArray()).getBytes();
         String base64 = TransactionCapsule.getBase64FromByteString(sig);
         byte[] businessAddress = SignUtils.signatureToAddress(hash, base64, DBConfig.isECKeyCryptoEngine());
         AccountStore accountStore = dbManager.getAccountStore();
